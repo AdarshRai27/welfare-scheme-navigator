@@ -1,0 +1,21 @@
+# Python environment and compilation
+.venv/
+venv/
+ENV/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local environment configuration
+.env
+.env.local
+
+# Docker volume mounts / database folders
+postgres_data/
+redis_data/
+
+# OS specific files
+.DS_Store
+Thumbs.db
+desktop.ini
