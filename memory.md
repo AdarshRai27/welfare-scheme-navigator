@@ -19,7 +19,7 @@
 - **Docker unavailable on dev host** — since Docker is not installed, local development uses mock service layers and Redis/DB in-memory fallbacks.
 
 ## Current Implementation Status
-Phase 2 complete. WhatsApp media downloading, session state tracking, Bhashini transcription, and document OCR parsing are fully integrated and verified passing 13/13 tests. Next is Phase 3 (Reasoning Agent).
+Phase 3 complete. LangGraph workflow, extract-retrieve-evaluate-chain-compose reasoning nodes, and LLM prompts are written and verified passing 16/16 tests. Next is Phase 4 (Response Delivery & Form Auto-Fill).
 
 ## Which File is Currently Being Worked On
 c:/Users/rinku/OneDrive/Desktop/Rag bot/tasks.md
