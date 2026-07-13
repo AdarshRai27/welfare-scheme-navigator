@@ -4,6 +4,7 @@
 
 ## What Has Been Completed
 - 2026-07-14: Initial project docs created (`requirements.md`, `architecture.md`, `rules.md`, `phases.md`, `tasks.md`, `memory.md`) based on the team's pitch deck content. Scaffolded all 6 files directly at the project root workspace `c:\Users\rinku\OneDrive\Desktop\Rag bot` per development requirements.
+- 2026-07-14: Git repository initialized, `.gitignore` created, and all Phase 0 changes committed under user credentials.
 
 ## Decisions Made & Why
 - **WhatsApp as the sole UI** — chosen because 500M+ Indians already use it and it requires zero app install, directly addressing the "digital divide" root cause.
@@ -18,7 +19,7 @@
 - **Docker unavailable on dev host** — since Docker is not installed, local development uses mock service layers and Redis/DB in-memory fallbacks.
 
 ## Current Implementation Status
-Phase 0 complete. Repo structure scaffolded, mock services written for WhatsApp, Bhashini, and OCR, env configuration loaded, and webhook endpoints verified passing 6/6 tests.
+Phase 1 complete. Database models, schema, pgvector store, Scrapy spiders (MyScheme + UP Portal), and pipelines are written and verified passing 11/11 tests. Next is Phase 2 (Voice & Document Input Pipeline).
 
 ## Which File is Currently Being Worked On
 c:/Users/rinku/OneDrive/Desktop/Rag bot/tasks.md

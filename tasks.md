@@ -3,23 +3,23 @@
 > Update this file after every meaningful change. Keep it honest — a task is only "Completed" if it's actually done and tested.
 
 ## Current Task
-Phase 1 Planning: Design DB schema, SQLAlchemy models, and plan the Scrapy scheme spiders.
+Phase 2 Planning: Design architecture and mock pipeline for voice (Bhashini transcription) and document input (OCR).
 
 ## Progress
-- **Overall:** 15% (Phase 0 fully completed, directories & config set up, mock integration verified)
-- **Current phase:** Phase 1 — Scheme Data Pipeline (0% complete)
+- **Overall:** 35% (Phase 0 and Phase 1 completed, data pipeline & schema fully verified)
+- **Current phase:** Phase 2 — Voice & Document Input Pipeline (0% complete)
 
 ## Priority
-1. Design database schemas and SQLAlchemy models for schemes and scraper runs
-2. Scaffold Scrapy scrapers under `backend/app/scraper`
+1. Design webhook receiver handling for voice notes (audio file download -> Bhashini transcribe)
+2. Design webhook receiver handling for document images (image download -> Tesseract/Qwen2-VL OCR)
 
 ## Pending Tasks
 - [ ] Register WhatsApp Cloud API developer account + test number (optional, mocked for now)
-- [ ] Design and implement PostgreSQL schema (`schema.sql`) and SQLAlchemy model classes (`app/db/models.py`)
-- [ ] Scaffold Scrapy project for web scraping schemes
-- [ ] Implement Scrapy spider for MyScheme.gov.in
-- [ ] Implement Scrapy spider for Uttar Pradesh scheme portal
-- [ ] Implement Celery Beat scraping scheduler
+- [ ] Implement WhatsApp voice note media downloading endpoint in `backend/app/services/whatsapp.py`
+- [ ] Implement WhatsApp image media downloading endpoint in `backend/app/services/whatsapp.py`
+- [ ] Integrate Bhashini ASR client inside webhook pipeline (`POST /webhook/whatsapp`)
+- [ ] Integrate OCR Tesseract + Qwen2-VL fallback extraction inside webhook pipeline
+- [ ] Test conversation session state persistence in Redis (multi-message user tracking)
 
 ## Blocked Tasks
 None.
@@ -35,6 +35,11 @@ None.
 - [x] Implemented mock services for WhatsApp, Bhashini, and OCR
 - [x] Implemented webhook verification handshake and basic echo receiver
 - [x] Verified Phase 0 setup by executing test suite passing 6/6 tests
+- [x] Designed database schema (`schema.sql`) and SQLAlchemy async models (`models.py`)
+- [x] Implemented `VectorStore` (supporting cosine distance vector search and keyword fallback ranking)
+- [x] Scaffolded Scrapy project spiders for MyScheme and Uttar Pradesh portals
+- [x] Implemented `SchemePipeline` for database ingestion and daily `scheduler.py` configuration
+- [x] Verified Phase 1 implementation by executing full test suite passing 11/11 tests
 
 ## Open Decisions Needing Team Input
 - Hackathon deadline / target timeline — not yet specified, affects how aggressively phases can be compressed
