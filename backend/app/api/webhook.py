@@ -7,17 +7,27 @@ from fastapi import APIRouter, Header, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
 
 from app.core.config import settings
+from app.core.session import SessionManager
+from app.services.bhashini import BhashiniService
+from app.services.ocr import OCRService
 from app.services.whatsapp import WhatsAppService
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/webhook")
 
-# Initialize WhatsApp service using global settings
+# Initialize WhatsApp, Bhashini, OCR, and Session managers using global settings
 whatsapp_service = WhatsAppService(
     token=settings.WHATSAPP_ACCESS_TOKEN,
     phone_number_id=settings.WHATSAPP_PHONE_NUMBER_ID,
 )
+session_manager = SessionManager(redis_url=settings.REDIS_URL)
+bhashini_service = BhashiniService(
+    api_key=settings.BHASHINI_API_KEY,
+    user_id=settings.BHASHINI_USER_ID,
+    pipeline_id=settings.BHASHINI_PIPELINE_ID,
+)
+ocr_service = OCRService()
 
 
 @router.get("/whatsapp", response_class=PlainTextResponse)
@@ -94,12 +104,20 @@ async def receive_webhook(
                 if not user_phone:
                     continue
 
+                # Retrieve or initialize the multi-turn session state
+                session = await session_manager.get_session(user_phone)
+                if not session:
+                    session = {
+                        "whatsapp_id": user_phone,
+                        "preferred_language": "hi",
+                        "extracted_profile": {},
+                    }
+
                 if msg_type == "text":
                     text_body = message.get("text", {}).get("body", "")
                     logger.info(
                         f"Received text from {user_phone}: {text_body}"
                     )
-                    # Echo back the text
                     await whatsapp_service.send_text_message(
                         to_phone=user_phone,
                         text=f"Mock Echo: {text_body}",
@@ -109,24 +127,60 @@ async def receive_webhook(
                     logger.info(
                         f"Received audio from {user_phone}: ID {audio_id}"
                     )
-                    # Confirm voice message receipt
+
+                    # 1. Download voice message audio bytes
+                    audio_bytes = await whatsapp_service.download_media(audio_id)
+
+                    # 2. Transcribe voice message utilizing Bhashini ASR
+                    source_lang = session.get("preferred_language", "hi")
+                    transcription = await bhashini_service.speech_to_text(
+                        audio_content_base64=audio_bytes.decode(
+                            "utf-8", errors="ignore"
+                        ),
+                        source_language=source_lang,
+                    )
+
+                    # 3. Translate transcription using Bhashini NMT
+                    english_query = await bhashini_service.translate_text(
+                        text=transcription,
+                        source_lang=source_lang,
+                        target_lang="en",
+                    )
+
                     await whatsapp_service.send_text_message(
                         to_phone=user_phone,
-                        text="Mock Echo: Received voice message.",
+                        text=f"Mock Echo: Transcribed voice note to: '{transcription}' (English: '{english_query}')",
                     )
                 elif msg_type == "image":
                     image_id = message.get("image", {}).get("id", "")
                     logger.info(
                         f"Received image from {user_phone}: ID {image_id}"
                     )
-                    # Confirm document/photo receipt
+
+                    # 1. Download document attachment image bytes
+                    image_bytes = await whatsapp_service.download_media(image_id)
+
+                    # 2. Run OCR text extraction via Tesseract/Qwen2-VL
+                    ocr_result = await ocr_service.extract_document_data(
+                        image_bytes=image_bytes,
+                        filename_hint=image_id,
+                    )
+                    doc_type = ocr_result.get("document_type", "unknown")
+                    extracted_fields = ocr_result.get("extracted_fields", {})
+
+                    # 3. Merge newly extracted data into the profile (Option A retention)
+                    session["extracted_profile"].update(extracted_fields)
+
                     await whatsapp_service.send_text_message(
                         to_phone=user_phone,
-                        text="Mock Echo: Received document photo.",
+                        text=f"Mock Echo: Extracted {doc_type} fields: {extracted_fields}",
                     )
                 else:
                     logger.info(
                         f"Received unsupported message type '{msg_type}' from {user_phone}"
                     )
+
+                # Persist updated session state back to store
+                await session_manager.save_session(user_phone, session)
 
     return {"status": "accepted"}

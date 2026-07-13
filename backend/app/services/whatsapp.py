@@ -73,3 +73,18 @@ class WhatsAppService:
             f"Verifying webhook signature: header={signature_header} (MOCK: always True)"
         )
         return True
+
+    async def download_media(self, media_id: str) -> bytes:
+        """Mock media download from Meta Cloud API.
+
+        Args:
+            media_id: Meta platform media node identifier.
+
+        Returns:
+            Raw binary bytes of the media file.
+        """
+        logger.info(f"[MOCK WHATSAPP] Downloading media content: id={media_id}")
+        if "audio" in media_id.lower():
+            return b"MOCK_AUDIO_BYTES_BASE64_FORMAT_DATA"
+        return b"MOCK_IMAGE_BYTES_PNG_FORMAT_DATA"
+

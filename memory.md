@@ -19,7 +19,7 @@
 - **Docker unavailable on dev host** — since Docker is not installed, local development uses mock service layers and Redis/DB in-memory fallbacks.
 
 ## Current Implementation Status
-Phase 1 complete. Database models, schema, pgvector store, Scrapy spiders (MyScheme + UP Portal), and pipelines are written and verified passing 11/11 tests. Next is Phase 2 (Voice & Document Input Pipeline).
+Phase 2 complete. WhatsApp media downloading, session state tracking, Bhashini transcription, and document OCR parsing are fully integrated and verified passing 13/13 tests. Next is Phase 3 (Reasoning Agent).
 
 ## Which File is Currently Being Worked On
 c:/Users/rinku/OneDrive/Desktop/Rag bot/tasks.md
