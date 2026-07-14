@@ -6,26 +6,25 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Validates and holds all application-wide configurations."""
 
+
     # Database & Redis Settings
-    DATABASE_URL: str
-    REDIS_URL: str
+    DATABASE_URL: str = "sqlite+aiosqlite:///welfare.db"
+    REDIS_URL: str = "redis://localhost:6379"
 
     # Ollama LLM Settings
-    OLLAMA_HOST: str
-    OLLAMA_MODEL: str
+    OLLAMA_HOST: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "llama3"
 
     # WhatsApp API Webhook Credentials
-    WHATSAPP_ACCESS_TOKEN: str
-    WHATSAPP_VERIFY_TOKEN: str
-    WHATSAPP_PHONE_NUMBER_ID: str
+    WHATSAPP_ACCESS_TOKEN: str = "mock_token"
+    WHATSAPP_VERIFY_TOKEN: str = "mock_verify"
+    WHATSAPP_PHONE_NUMBER_ID: str = "mock_phone"
 
     # Bhashini Speech API Credentials
-    BHASHINI_API_KEY: str
-    BHASHINI_USER_ID: str
-    BHASHINI_SOURCE_LANG: str
-    BHASHINI_PIPELINE_ID: str
-
-    # Groq & OpenAI Cloud Credentials (Optional fallback)
+    BHASHINI_API_KEY: str = "mock_key"
+    BHASHINI_USER_ID: str = "mock_user"
+    BHASHINI_SOURCE_LANG: str = "hi"
+    BHASHINI_PIPELINE_ID: str = "mock_pipeline"
     GROQ_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
 
