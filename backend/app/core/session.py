@@ -7,6 +7,18 @@ from typing import Any, Dict, Optional
 logger = logging.getLogger(__name__)
 
 
+import uuid
+
+
+class UUIDEncoder(json.JSONEncoder):
+    """Custom JSON encoder to handle UUID serialization."""
+
+    def default(self, obj: Any) -> Any:
+        if isinstance(obj, uuid.UUID):
+            return str(obj)
+        return super().default(obj)
+
+
 class SessionManager:
     """Manages multi-turn user conversation states."""
 
@@ -65,7 +77,7 @@ class SessionManager:
             state: Context data to persist.
             expiry_seconds: Session duration threshold.
         """
-        serialized = json.dumps(state)
+        serialized = json.dumps(state, cls=UUIDEncoder)
         if self.client:
             try:
                 self.client.setex(

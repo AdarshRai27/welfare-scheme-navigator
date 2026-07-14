@@ -53,17 +53,20 @@
 
                     <!-- Chat Input and Action Triggers -->
                     <div class="chat-input-area">
-                        <!-- Quick mock actions buttons -->
                         <div class="quick-actions">
-                            <button class="action-btn" id="btnAudio" title="Send simulated spoken voice note in Hindi">
-                                🎤 Mock Voice Note
+                            <button class="action-btn" id="btnAudio" title="Upload real spoken voice note (ogg/wav/mp3/m4a)">
+                                🎤 Send Voice Note
                             </button>
-                            <button class="action-btn" id="btnAadhaar" title="Simulate Aadhaar Card photo OCR scan">
+                            <button class="action-btn" id="btnAadhaar" title="Upload real Aadhaar Card photo for OCR scan">
                                 🪪 Upload Aadhaar
                             </button>
-                            <button class="action-btn" id="btnIncome" title="Simulate Income Certificate photo OCR scan">
+                            <button class="action-btn" id="btnIncome" title="Upload real Income Certificate photo for OCR scan">
                                 📄 Upload Income Cert
                             </button>
+                            <!-- Hidden actual file upload triggers -->
+                            <input type="file" id="fileAudio" accept="audio/*,video/*" style="display: none;">
+                            <input type="file" id="fileAadhaar" accept="image/*" style="display: none;">
+                            <input type="file" id="fileIncome" accept="image/*" style="display: none;">
                         </div>
                         <form class="input-form" id="inputForm">
                             <input type="text" id="textInput" placeholder="Type a message in Hindi or English..." required>

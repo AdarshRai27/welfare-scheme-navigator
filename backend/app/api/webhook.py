@@ -1,9 +1,10 @@
 """WhatsApp Cloud API Webhook route handler."""
 
+import base64
 import logging
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Header, HTTPException, Query, Request
+from fastapi import APIRouter, Header, HTTPException, Query, Request, UploadFile, File, Form
 from fastapi.responses import PlainTextResponse
 
 from app.agent.graph import run_agent
@@ -280,5 +281,95 @@ async def delete_session_diagnostics(phone: str) -> Dict[str, str]:
     """Diagnostic endpoint to clear user session state."""
     await session_manager.clear_session(phone)
     return {"status": "cleared"}
+
+
+@router.post("/web/message")
+async def handle_web_message(
+    phone: str = Form(...),
+    message_type: str = Form(...),  # "text", "audio", "aadhaar", "income"
+    text: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None),
+) -> Dict[str, Any]:
+    """Processes real-time user text, audio, or document uploads from the Web UI."""
+    # 1. Load active session
+    session = await session_manager.get_session(phone)
+    if not session:
+        session = {
+            "whatsapp_id": phone,
+            "preferred_language": "hi",
+            "extracted_profile": {},
+        }
+
+    reply_text = ""
+    result = {}
+
+    # 2. Process based on message type
+    if message_type == "text" and text:
+        # Run agent directly on typed text
+        result = await run_agent(text, session.get("extracted_profile", {}))
+        # Update session
+        session["extracted_profile"] = result.get("extracted_profile", {})
+        session["eligible_schemes"] = result.get("eligible_schemes", [])
+        session["suggested_schemes"] = result.get("suggested_schemes", [])
+        await session_manager.save_session(phone, session)
+        reply_text = result.get("reply_text", "")
+
+    elif message_type in ("aadhaar", "income") and file:
+        file_bytes = await file.read()
+        # Trigger local OCR directly on uploaded file bytes
+        ocr_result = await ocr_service.extract_document_data(
+            file_bytes, filename_hint=message_type
+        )
+        extracted_fields = ocr_result.get("extracted_fields", {})
+        session.setdefault("extracted_profile", {}).update(extracted_fields)
+        await session_manager.save_session(phone, session)
+
+        # Run agent on updated profile
+        trigger_query = f"Extracted {message_type} parameters"
+        result = await run_agent(trigger_query, session["extracted_profile"])
+        session["eligible_schemes"] = result.get("eligible_schemes", [])
+        session["suggested_schemes"] = result.get("suggested_schemes", [])
+        await session_manager.save_session(phone, session)
+        reply_text = result.get("reply_text", "")
+
+    elif message_type == "audio" and file:
+        file_bytes = await file.read()
+        base64_audio = base64.b64encode(file_bytes).decode("utf-8")
+        # Run speech-to-text
+        transcription = await bhashini_service.speech_to_text(base64_audio, "hi")
+        # Run translation
+        english_query = await bhashini_service.translate_text(
+            transcription, "hi", "en"
+        )
+
+        # Run agent
+        result = await run_agent(
+            english_query, session.setdefault("extracted_profile", {})
+        )
+        session["extracted_profile"] = result.get("extracted_profile", {})
+        session["eligible_schemes"] = result.get("eligible_schemes", [])
+        session["suggested_schemes"] = result.get("suggested_schemes", [])
+        await session_manager.save_session(phone, session)
+
+        reply_text = (
+            f"🎤 **Transcription (Hindi):** {transcription}\n\n"
+            f"{result.get('reply_text', '')}"
+        )
+    # Generate pre-filled forms if eligible schemes exist
+    profile = session.get("extracted_profile", {})
+    eligible = session.get("eligible_schemes", [])
+    for scheme in eligible:
+        scheme_name = scheme.get("name")
+        if scheme_name == "PM-Kisan Samman Nidhi":
+            form_filler_service.fill_form("PM-Kisan Samman Nidhi", profile)
+        elif scheme_name == "UP Senior Pension Scheme":
+            form_filler_service.fill_form("UP Senior Pension Scheme", profile)
+
+    return {
+        "status": "success",
+        "reply_text": reply_text,
+        "session": session,
+    }
+
 
 

@@ -7,11 +7,18 @@ const BASE_URL = window.location.origin;
 const chatFeed = document.getElementById("chatFeed");
 const inputForm = document.getElementById("inputForm");
 const textInput = document.getElementById("textInput");
+const redisState = document.getElementById("redisState");
+
+// Button Triggers
 const btnAudio = document.getElementById("btnAudio");
 const btnAadhaar = document.getElementById("btnAadhaar");
 const btnIncome = document.getElementById("btnIncome");
 const btnClear = document.getElementById("btnClear");
-const redisState = document.getElementById("redisState");
+
+// Hidden File Inputs
+const fileAudio = document.getElementById("fileAudio");
+const fileAadhaar = document.getElementById("fileAadhaar");
+const fileIncome = document.getElementById("fileIncome");
 
 // Profile visualizer DOM
 const valName = document.getElementById("valName");
@@ -20,17 +27,24 @@ const valIncome = document.getElementById("valIncome");
 const valLand = document.getElementById("valLand");
 const valState = document.getElementById("valState");
 
-// Helpers to add message bubbles
+// Helper to add message bubbles
 function addMessage(sender, text) {
     const msgDiv = document.createElement("div");
     msgDiv.classList.add("msg", sender === "user" ? "user-msg" : "bot-msg");
 
     // Replace Markdown wraps or links in reply
     let processedText = text;
-    // Simple replacement of relative static paths with absolute links
+    
+    // Convert relative static paths to absolute links
     processedText = processedText.replace(
         /(\/static\/forms\/[a-zA-Z0-9_\-\.]+)/g,
         `<a href="$1" target="_blank">$1</a>`
+    );
+
+    // Convert audio speech paths to embedded audio player controls
+    processedText = processedText.replace(
+        /(\/static\/audio\/[a-zA-Z0-9_\-\.]+\.mp3)/g,
+        `<audio controls class="msg-audio-player" style="display:block; margin-top:8px; width:100%; max-width:240px;" src="$1"></audio>`
     );
 
     // Get timestamp
@@ -48,24 +62,31 @@ function addMessage(sender, text) {
     chatFeed.scrollTop = chatFeed.scrollHeight;
 }
 
-// REST call to trigger webhook
-async function postWebhook(payload) {
+// POST text or file data to backend
+async function sendWebMessage(messageType, text = null, file = null) {
+    const formData = new FormData();
+    formData.append("phone", PHONE_NUMBER);
+    formData.append("message_type", messageType);
+    if (text) formData.append("text", text);
+    if (file) formData.append("file", file);
+
     try {
-        const response = await fetch(`${BASE_URL}/webhook/whatsapp`, {
+        const response = await fetch(`${BASE_URL}/webhook/web/message`, {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
+            body: formData,
         });
         if (response.ok) {
-            // Wait brief moment for graph execution, then refresh diagnostics state
-            setTimeout(fetchState, 600);
+            const data = await response.json();
+            if (data && data.reply_text) {
+                addMessage("bot", data.reply_text);
+            }
+            // Refresh state diagnostics panel
+            fetchState();
         } else {
-            console.error("Webhook POST failed:", await response.text());
+            console.error("Failed sending message:", await response.text());
         }
     } catch (err) {
-        console.error("Connection error posting webhook:", err);
+        console.error("Connection error:", err);
     }
 }
 
@@ -103,7 +124,7 @@ function resetProfileCard() {
     valState.textContent = "Not Extracted";
 }
 
-// Send user text messages
+// Text Form Submit
 inputForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const query = textInput.value.trim();
@@ -111,125 +132,42 @@ inputForm.addEventListener("submit", (e) => {
 
     addMessage("user", query);
     textInput.value = "";
-
-    const payload = {
-        "object": "whatsapp_business_account",
-        "entry": [{
-            "changes": [{
-                "value": {
-                    "messaging_product": "whatsapp",
-                    "messages": [{
-                        "from": PHONE_NUMBER,
-                        "id": "web_" + Math.random().toString(36).substr(2, 9),
-                        "timestamp": Math.floor(Date.now() / 1000).toString(),
-                        "text": { "body": query },
-                        "type": "text"
-                    }]
-                },
-                "field": "messages"
-            }]
-        }]
-    };
-
-    postWebhook(payload);
+    sendWebMessage("text", query);
 });
 
-// Trigger mock voice note
-btnAudio.addEventListener("click", () => {
-    addMessage("user", "🎤 [Sent Spoken Hindi Voice Note]");
-    
-    const payload = {
-        "object": "whatsapp_business_account",
-        "entry": [{
-            "changes": [{
-                "value": {
-                    "messaging_product": "whatsapp",
-                    "messages": [{
-                        "from": PHONE_NUMBER,
-                        "id": "web_audio_" + Math.random().toString(36).substr(2, 9),
-                        "timestamp": Math.floor(Date.now() / 1000).toString(),
-                        "audio": {
-                            "id": "mock_audio_media_id",
-                            "mime_type": "audio/ogg"
-                        },
-                        "type": "audio"
-                    }]
-                },
-                "field": "messages"
-            }]
-        }]
-    };
+// Trigger hidden file inputs on click
+btnAudio.addEventListener("click", () => fileAudio.click());
+btnAadhaar.addEventListener("click", () => fileAadhaar.click());
+btnIncome.addEventListener("click", () => fileIncome.click());
 
-    postWebhook(payload);
+// File input change handlers
+fileAudio.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        addMessage("user", `🎤 [Sent Voice Note: ${file.name}]`);
+        sendWebMessage("audio", null, file);
+    }
 });
 
-// Trigger mock Aadhaar OCR
-btnAadhaar.addEventListener("click", () => {
-    addMessage("user", "🪪 [Uploaded Aadhaar Card Photo]");
-
-    const payload = {
-        "object": "whatsapp_business_account",
-        "entry": [{
-            "changes": [{
-                "value": {
-                    "messaging_product": "whatsapp",
-                    "messages": [{
-                        "from": PHONE_NUMBER,
-                        "id": "web_img_aadhaar_" + Math.random().toString(36).substr(2, 9),
-                        "timestamp": Math.floor(Date.now() / 1000).toString(),
-                        "image": {
-                            "id": "media_image_aadhaar",
-                            "mime_type": "image/jpeg"
-                        },
-                        "type": "image"
-                    }]
-                },
-                "field": "messages"
-            }]
-        }]
-    };
-
-    postWebhook(payload);
+fileAadhaar.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        addMessage("user", `🪪 [Uploaded Aadhaar: ${file.name}]`);
+        sendWebMessage("aadhaar", null, file);
+    }
 });
 
-// Trigger mock Income OCR
-btnIncome.addEventListener("click", () => {
-    addMessage("user", "📄 [Uploaded Income Certificate Photo]");
-
-    const payload = {
-        "object": "whatsapp_business_account",
-        "entry": [{
-            "changes": [{
-                "value": {
-                    "messaging_product": "whatsapp",
-                    "messages": [{
-                        "from": PHONE_NUMBER,
-                        "id": "web_img_income_" + Math.random().toString(36).substr(2, 9),
-                        "timestamp": Math.floor(Date.now() / 1000).toString(),
-                        "image": {
-                            "id": "media_image_income",
-                            "mime_type": "image/jpeg"
-                        },
-                        "type": "image"
-                    }]
-                },
-                "field": "messages"
-            }]
-        }]
-    };
-
-    postWebhook(payload);
+fileIncome.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        addMessage("user", `📄 [Uploaded Income Certificate: ${file.name}]`);
+        sendWebMessage("income", null, file);
+    }
 });
 
 // Clear session diag trigger
 btnClear.addEventListener("click", async () => {
     try {
-        const payload = {
-            "whatsapp_id": PHONE_NUMBER,
-            "preferred_language": "hi",
-            "extracted_profile": {}
-        };
-        // Clear Redis cache immediately
         await fetch(`${BASE_URL}/webhook/diagnostics/session/${PHONE_NUMBER}`, { method: "DELETE" });
         redisState.textContent = '{ "status": "Session cleared." }';
         resetProfileCard();
