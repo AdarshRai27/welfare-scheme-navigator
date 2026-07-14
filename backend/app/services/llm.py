@@ -1,4 +1,4 @@
-"""LLM service client for querying Groq or local Ollama instances."""
+"""LLM service client for querying OpenAI or fallback templates."""
 
 import json
 import logging
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 async def run_llm_completion(
     prompt: str, system_message: str = "You are a helpful assistant."
 ) -> str:
-    """Sends a chat completion request to the Groq API.
+    """Sends a chat completion request to the OpenAI API.
 
     Args:
         prompt: User input string.
@@ -28,16 +28,14 @@ async def run_llm_completion(
     Returns:
         Generated text response content.
     """
-    if settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("mock"):
-        url = "https://api.groq.com/openai/v1/chat/completions"
+    if settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("mock"):
+        url = "https://api.openai.com/v1/chat/completions"
         headers = {
-            "Authorization": f"Bearer {settings.GROQ_API_KEY}",
+            "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
             "Content-Type": "application/json",
         }
-
-
         payload = {
-            "model": "llama-3.1-8b-instant",
+            "model": "gpt-4o-mini",
             "messages": [
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": prompt},
@@ -45,22 +43,22 @@ async def run_llm_completion(
             "temperature": 0.2,
         }
         try:
-            async with httpx.AsyncClient(timeout=20.0) as client:
+            async with httpx.AsyncClient(timeout=25.0) as client:
                 res = await client.post(url, json=payload, headers=headers)
                 if res.status_code == 200:
                     data = res.json()
                     content = data["choices"][0]["message"]["content"]
                     logger.info(
-                        "[GROQ LLM] Cloud model response fetched successfully."
+                        "[OPENAI LLM] GPT-4o-mini response fetched successfully."
                     )
                     return content
                 else:
                     logger.warning(
-                        f"[GROQ LLM] Failed response (status {res.status_code}): {res.text}. Falling back."
+                        f"[OPENAI LLM] Failed response (status {res.status_code}): {res.text}"
                     )
         except Exception as err:
             logger.warning(
-                f"[GROQ LLM] Connection error: {err}. Falling back."
+                f"[OPENAI LLM] Connection error: {err}"
             )
 
     return ""
@@ -75,7 +73,7 @@ async def llm_extract_profile(query: str) -> Dict[str, Any]:
     Returns:
         Parsed attributes dictionary.
     """
-    if settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("mock"):
+    if settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("mock"):
         prompt = PROFILE_EXTRACTION_PROMPT.format(query=query)
         response_text = await run_llm_completion(
             prompt=prompt,
@@ -94,12 +92,12 @@ async def llm_extract_profile(query: str) -> Dict[str, Any]:
                 )
                 data = json.loads(cleaned)
                 logger.info(
-                    f"[LLM EXTRACT] Extracted parameters via Groq: {data}"
+                    f"[OPENAI EXTRACT] Extracted parameters: {data}"
                 )
                 return data
             except Exception as err:
                 logger.warning(
-                    f"[LLM EXTRACT] Failed parsing LLM response '{response_text}': {err}"
+                    f"[OPENAI EXTRACT] Failed parsing JSON response '{response_text}': {err}"
                 )
 
     # Fallback to simulation
@@ -124,7 +122,7 @@ async def llm_compose_response(
     Returns:
         Markdown response.
     """
-    if settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("mock"):
+    if settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("mock"):
         prompt = RESPONSE_COMPOSITION_PROMPT.format(
             language=language,
             profile=json.dumps(profile, indent=2),

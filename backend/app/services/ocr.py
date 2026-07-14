@@ -1,4 +1,4 @@
-"""OCR service helper for document processing using Groq Vision API or mocks."""
+"""OCR service helper for document processing using OpenAI Vision API or mocks."""
 
 import base64
 import json
@@ -20,29 +20,29 @@ class OCRService:
     ) -> Dict[str, Any]:
         """Extracts fields from document photos (Aadhaar, Income, Land, etc.).
 
-        If a GROQ_API_KEY is active, uses Llama 3.2 Vision in the cloud for real OCR.
+        If an OPENAI_API_KEY is active, uses GPT-4o-mini Vision in the cloud for real OCR.
         Otherwise, falls back to high-fidelity mock data.
         """
         hint = filename_hint.lower()
 
-        # 1. Use Groq Vision if API key is active
-        if settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("mock"):
+        # 1. Use OpenAI Vision if API key is active
+        if settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("mock"):
             logger.info(
-                f"[GROQ VISION OCR] Parsing document: hint={filename_hint} | size={len(image_bytes)} bytes"
+                f"[OPENAI VISION OCR] Parsing document: hint={filename_hint} | size={len(image_bytes)} bytes"
             )
             try:
                 base64_img = base64.b64encode(image_bytes).decode("utf-8")
-                url = "https://api.groq.com/openai/v1/chat/completions"
+                url = "https://api.openai.com/v1/chat/completions"
                 headers = {
-                    "Authorization": f"Bearer {settings.GROQ_API_KEY}",
+                    "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
                     "Content-Type": "application/json",
                 }
 
                 # Dynamic prompt based on document hint
                 prompt_text = (
-                    "Extract structured information from this Indian government document. "
-                    "Analyze the text fields and numbers carefully. "
-                    "Return ONLY a raw JSON dictionary. Do not include markdown codeblocks or descriptions. "
+                    "Extract structured information from this Indian government document photo. "
+                    "Analyze the text fields, values, and numbers carefully. "
+                    "Return ONLY a raw JSON dictionary. Do not include markdown codeblocks, notes, or descriptions. "
                     "Fields to parse if found:\n"
                     "- 'name' (string, applicant full name)\n"
                     "- 'aadhaar_number' (string, formatted XXXX-XXXX-XXXX)\n"
@@ -52,7 +52,7 @@ class OCRService:
                 )
 
                 payload = {
-                    "model": "llama-3.2-11b-vision-preview",
+                    "model": "gpt-4o-mini",
                     "messages": [
                         {
                             "role": "user",
@@ -71,14 +71,14 @@ class OCRService:
                     "response_format": {"type": "json_object"},
                 }
 
-                async with httpx.AsyncClient(timeout=25.0) as client:
+                async with httpx.AsyncClient(timeout=30.0) as client:
                     res = await client.post(url, json=payload, headers=headers)
                     if res.status_code == 200:
                         result = res.json()
                         content = result["choices"][0]["message"]["content"].strip()
                         extracted_fields = json.loads(content)
                         logger.info(
-                            f"[GROQ VISION OCR] Successfully parsed fields: {extracted_fields}"
+                            f"[OPENAI VISION OCR] Successfully parsed fields: {extracted_fields}"
                         )
 
                         doc_type = "unknown"
@@ -95,11 +95,11 @@ class OCRService:
                         }
                     else:
                         logger.warning(
-                            f"[GROQ VISION OCR] API error (status {res.status_code}): {res.text}"
+                            f"[OPENAI VISION OCR] API error (status {res.status_code}): {res.text}"
                         )
             except Exception as err:
                 logger.warning(
-                    f"[GROQ VISION OCR] Connection or parsing error: {err}"
+                    f"[OPENAI VISION OCR] Connection or parsing error: {err}"
                 )
 
         # 2. Mock Fallback
