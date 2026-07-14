@@ -3,7 +3,7 @@
 import logging
 from typing import Any, Dict
 
-from app.agent.prompts.prompt_templates import simulate_llm_call
+from app.services.llm import llm_compose_response
 
 logger = logging.getLogger(__name__)
 
@@ -23,14 +23,11 @@ async def compose_response_node(state: Dict[str, Any]) -> Dict[str, Any]:
     language = state.get("preferred_language", "hi")
 
     # Generate response via template composition
-    reply_text = simulate_llm_call(
-        prompt_type="compose",
-        variables={
-            "profile": profile,
-            "eligible": eligible,
-            "suggested": suggested,
-            "language": language,
-        },
+    reply_text = await llm_compose_response(
+        profile=profile,
+        eligible=eligible,
+        suggested=suggested,
+        language=language,
     )
 
     logger.info("[AGENT compose_response] Composed markdown message.")

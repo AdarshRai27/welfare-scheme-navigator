@@ -1,0 +1,422 @@
+/* Core Design System & Theme Styles */
+
+:root {
+    --bg-main: #090B10;
+    --bg-surface: rgba(17, 21, 31, 0.65);
+    --border-color: rgba(255, 255, 255, 0.06);
+
+    --primary-color: #25D366; /* WhatsApp Accent Green */
+    --primary-glow: rgba(37, 211, 102, 0.25);
+
+    --diag-accent: #00E5FF; /* Glowing Cyan Accent */
+    --diag-glow: rgba(0, 229, 255, 0.2);
+
+    --msg-user: #005C4B; /* Dark Green WhatsApp User bubble */
+    --msg-bot: #202C33;  /* Slate WhatsApp Bot bubble */
+
+    --text-main: #E9EDEF;
+    --text-dim: #8696A0;
+
+    --font-header: 'Outfit', sans-serif;
+    --font-body: 'Inter', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    font-family: var(--font-body);
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-image: 
+        radial-gradient(circle at 10% 20%, rgba(37, 211, 102, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(0, 229, 255, 0.05) 0%, transparent 40%);
+}
+
+/* APPLICATION WRAPPER */
+.app-container {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    max-width: 1400px;
+}
+
+/* HEADER BAR */
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.logo h1 {
+    font-family: var(--font-header);
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.logo h1 span {
+    font-weight: 400;
+    font-size: 0.95rem;
+    color: var(--text-dim);
+    margin-left: 5px;
+}
+
+.neon-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    box-shadow: 0 0 10px var(--primary-color);
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+}
+
+.status-text {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-dim);
+}
+
+.pulse-ring {
+    width: 8px;
+    height: 8px;
+    background-color: var(--diag-accent);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--diag-accent);
+}
+
+/* MAIN PANEL LAYOUT */
+.main-layout {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1.1fr;
+    gap: 25px;
+    padding-top: 20px;
+    min-height: 0; /* Prevents overflow grid stretches */
+}
+
+/* SIMULATOR CONTAINER (WhatsApp UI) */
+.simulator-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.simulator-card {
+    flex: 1;
+    background: var(--bg-surface);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.chat-header {
+    background: rgba(32, 44, 51, 0.4);
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.avatar {
+    font-size: 1.8rem;
+    background: rgba(255, 255, 255, 0.05);
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.chat-info h3 {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.chat-info p {
+    font-size: 0.75rem;
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+/* MESSAGES FEED */
+.chat-feed {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+/* MESSAGE BUBBLES */
+.msg {
+    display: flex;
+    width: 100%;
+}
+
+.user-msg {
+    justify-content: flex-end;
+}
+
+.bot-msg {
+    justify-content: flex-start;
+}
+
+.bubble {
+    max-width: 80%;
+    padding: 10px 14px;
+    border-radius: 8px;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+
+.user-msg .bubble {
+    background-color: var(--msg-user);
+    color: var(--text-main);
+    border-top-right-radius: 2px;
+}
+
+.bot-msg .bubble {
+    background-color: var(--msg-bot);
+    color: var(--text-main);
+    border-top-left-radius: 2px;
+}
+
+.bubble p {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.time {
+    display: block;
+    text-align: right;
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.35);
+    margin-top: 4px;
+}
+
+/* BUBBLE CHECKLISTS AND LINKS */
+.bubble a {
+    color: var(--diag-accent);
+    text-decoration: underline;
+    font-weight: 500;
+}
+
+/* INPUT FOOTER */
+.chat-input-area {
+    padding: 15px 20px;
+    background: rgba(32, 44, 51, 0.2);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.quick-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.action-btn {
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover {
+    background: rgba(37, 211, 102, 0.08);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 8px var(--primary-glow);
+}
+
+.input-form {
+    display: flex;
+    gap: 10px;
+}
+
+.input-form input {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid var(--border-color);
+    padding: 12px 16px;
+    border-radius: 8px;
+    color: var(--text-main);
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    outline: none;
+    transition: border 0.2s ease;
+}
+
+.input-form input:focus {
+    border-color: var(--primary-color);
+}
+
+.send-btn {
+    background-color: var(--primary-color);
+    color: #0b0e14;
+    border: none;
+    padding: 0 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: transform 0.1s ease, box-shadow 0.2s ease;
+}
+
+.send-btn:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 12px var(--primary-glow);
+}
+
+/* DIAGNOSTICS CARD PANEL */
+.diagnostics-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    min-height: 0;
+}
+
+.diag-card {
+    background: var(--bg-surface);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 16px;
+    border: 1px solid var(--border-color);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.diag-card h2 {
+    font-family: var(--font-header);
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: var(--diag-accent);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* PROFILE GRID */
+.profile-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+.profile-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.profile-item .label {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.profile-item .value {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+/* REDIS STATE CARD */
+.json-card {
+    flex: 1;
+    min-height: 0;
+}
+
+.json-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.json-header h2 {
+    margin-bottom: 0;
+}
+
+.diag-btn-clear {
+    background: transparent;
+    color: #ff3b30;
+    border: 1px solid rgba(255, 59, 48, 0.2);
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s ease;
+}
+
+.diag-btn-clear:hover {
+    background: rgba(255, 59, 48, 0.1);
+}
+
+.json-code {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 15px;
+    font-family: monospace;
+    font-size: 0.8rem;
+    color: var(--diag-accent);
+    overflow-y: auto;
+    white-space: pre-wrap;
+    min-height: 0;
+}

@@ -1,5 +1,5 @@
 """Configuration module to load and validate environment variables."""
-
+from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     BHASHINI_USER_ID: str
     BHASHINI_SOURCE_LANG: str
     BHASHINI_PIPELINE_ID: str
+
+    # Groq & OpenAI Cloud Credentials (Optional fallback)
+    GROQ_API_KEY: Optional[str] = None
+    OPENAI_API_KEY: Optional[str] = None
 
     # Configuration source preference (.env file support)
     model_config = SettingsConfigDict(

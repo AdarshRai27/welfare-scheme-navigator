@@ -274,3 +274,11 @@ async def get_session_diagnostics(phone: str) -> Dict[str, Any]:
     state = await session_manager.get_session(phone)
     return state or {}
 
+
+@router.delete("/diagnostics/session/{phone}")
+async def delete_session_diagnostics(phone: str) -> Dict[str, str]:
+    """Diagnostic endpoint to clear user session state."""
+    await session_manager.clear_session(phone)
+    return {"status": "cleared"}
+
+

@@ -53,7 +53,10 @@ None.
 - [x] Created backend Dockerfile with build dependencies, ffmpeg, and Tesseract OCR packs
 - [x] Configured PostgreSQL, Redis, and FastAPI services in docker-compose.yml
 - [x] Wrote deploy.sh bash scripting to build and launch orchestrator networks
-- [x] Verified complete pipeline suite via automated tests (17/17 tests passing)
+- [x] Created index.html, index.css, and index.js for side-by-side WhatsApp simulator
+- [x] Integrated real-time Groq Cloud LLM completion and fallback wrapper in llm.py
+- [x] Implemented diagnostics endpoints (GET and DELETE) to read/reset sessions
+- [x] Verified Web Chat Simulator pipelines via automated tests (18/18 tests passing)
 
 ## Open Decisions Needing Team Input
 - Hackathon deadline / target timeline — not yet specified, affects how aggressively phases can be compressed

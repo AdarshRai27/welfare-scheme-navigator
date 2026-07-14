@@ -4,10 +4,7 @@ import json
 import logging
 from typing import Any, Dict
 
-from app.agent.prompts.prompt_templates import (
-    PROFILE_EXTRACTION_PROMPT,
-    simulate_llm_call,
-)
+from app.services.llm import llm_extract_profile
 
 logger = logging.getLogger(__name__)
 
@@ -27,13 +24,8 @@ async def extract_profile_node(state: Dict[str, Any]) -> Dict[str, Any]:
     # Skip parameter extraction for system-generated triggers (e.g., OCR notifications)
     if query and not query.startswith("Extracted"):
         try:
-            # Simulate or trigger LLM call to extract parameters
-            extracted_json = simulate_llm_call(
-                prompt_type="extract",
-                variables={"query": query},
-            )
-            extracted_fields = json.loads(extracted_json)
-            # Update profile in state
+            # Trigger real LLM extraction with mock fallback
+            extracted_fields = await llm_extract_profile(query)
             profile.update(extracted_fields)
             logger.info(
                 f"[AGENT extract_profile] Extracted fields: {extracted_fields}"

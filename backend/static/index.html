@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic Scheme Navigator — Live Demo</title>
+    <!-- Google Fonts Outfit & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/index.css">
+</head>
+<body>
+    <div class="app-container">
+        
+        <!-- HEADER -->
+        <header class="app-header">
+            <div class="logo">
+                <span class="neon-dot"></span>
+                <h1>SchemeNavigator <span>Portfolio Preview</span></h1>
+            </div>
+            <div class="status-indicator">
+                <span class="pulse-ring"></span>
+                <span class="status-text">Backend Connected (Mock/Groq Mode)</span>
+            </div>
+        </header>
+
+        <!-- MAIN LAYOUT -->
+        <main class="main-layout">
+            
+            <!-- LEFT PANEL: WhatsApp Chat Simulator -->
+            <section class="simulator-panel">
+                <div class="simulator-card">
+                    
+                    <!-- Chat Header -->
+                    <div class="chat-header">
+                        <div class="avatar">🤖</div>
+                        <div class="chat-info">
+                            <h3>Sarkari Sahayak</h3>
+                            <p>Online Welfare Advisor</p>
+                        </div>
+                    </div>
+
+                    <!-- Chat Feed -->
+                    <div class="chat-feed" id="chatFeed">
+                        <div class="msg bot-msg">
+                            <div class="bubble">
+                                <p>नमस्ते! मैं आपका सरकारी सहायक हूँ। आप किस कल्याणकारी योजना के बारे में जानकारी प्राप्त करना चाहते हैं? (उदा. किसानों या पेंशनरों की योजनाएं)</p>
+                                <span class="time">12:00 PM</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Input and Action Triggers -->
+                    <div class="chat-input-area">
+                        <!-- Quick mock actions buttons -->
+                        <div class="quick-actions">
+                            <button class="action-btn" id="btnAudio" title="Send simulated spoken voice note in Hindi">
+                                🎤 Mock Voice Note
+                            </button>
+                            <button class="action-btn" id="btnAadhaar" title="Simulate Aadhaar Card photo OCR scan">
+                                🪪 Upload Aadhaar
+                            </button>
+                            <button class="action-btn" id="btnIncome" title="Simulate Income Certificate photo OCR scan">
+                                📄 Upload Income Cert
+                            </button>
+                        </div>
+                        <form class="input-form" id="inputForm">
+                            <input type="text" id="textInput" placeholder="Type a message in Hindi or English..." required>
+                            <button type="submit" class="send-btn">Send</button>
+                        </form>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- RIGHT PANEL: Live Session State diagnostics -->
+            <section class="diagnostics-panel">
+                
+                <!-- Live Profile Visualizer -->
+                <div class="diag-card visualizer-card">
+                    <h2>👤 Live Extracted Profile</h2>
+                    <div class="profile-grid">
+                        <div class="profile-item">
+                            <span class="label">Full Name</span>
+                            <span class="value" id="valName">Not Extracted</span>
+                        </div>
+                        <div class="profile-item">
+                            <span class="label">Aadhaar Number</span>
+                            <span class="value" id="valAadhaar">Not Extracted</span>
+                        </div>
+                        <div class="profile-item">
+                            <span class="label">Annual Income</span>
+                            <span class="value" id="valIncome">Not Extracted</span>
+                        </div>
+                        <div class="profile-item">
+                            <span class="label">Landholdings</span>
+                            <span class="value" id="valLand">Not Extracted</span>
+                        </div>
+                        <div class="profile-item">
+                            <span class="label">State Residence</span>
+                            <span class="value" id="valState">Not Extracted</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Redis Live Cache JSON View -->
+                <div class="diag-card json-card">
+                    <div class="json-header">
+                        <h2>💾 Active Redis Session State</h2>
+                        <button class="diag-btn-clear" id="btnClear">Clear Session</button>
+                    </div>
+                    <pre class="json-code" id="redisState">{ "status": "Waiting for interaction..." }</pre>
+                </div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+    <!-- Client-side execution scripts -->
+    <script src="/static/index.js"></script>
+</body>
+</html>
