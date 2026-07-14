@@ -1,4 +1,4 @@
-"""Service handling audio speech-to-text, text-to-speech, and translation using OpenAI or fallback mocks."""
+"""Service handling audio speech-to-text, text-to-speech, and translation using Groq and local gTTS."""
 
 import base64
 import logging
@@ -34,7 +34,7 @@ class BhashiniService:
     async def speech_to_text(
         self, audio_content_base64: str, source_language: str
     ) -> str:
-        """Transcribe base64 audio bytes to text using OpenAI Whisper.
+        """Transcribe base64 audio bytes to text using Groq Whisper.
 
         Args:
             audio_content_base64: Base64-encoded audio bytes.
@@ -43,28 +43,28 @@ class BhashiniService:
         Returns:
             Transcription string.
         """
-        # 1. First attempt real OpenAI Whisper transcription if key is present
-        if settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("mock"):
+        # 1. First attempt real Groq Whisper transcription if key is present
+        if settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("mock"):
             logger.info(
-                f"[OPENAI WHISPER] Transcribing audio with Whisper ASR in language: {source_language}"
+                f"[GROQ WHISPER] Transcribing audio with Whisper ASR in language: {source_language}"
             )
             try:
                 audio_bytes = base64.b64decode(audio_content_base64)
-                
+
                 # Write to a temporary file for the multipart client upload
                 with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as tmp_file:
                     tmp_file.write(audio_bytes)
                     tmp_file_path = tmp_file.name
 
-                url = "https://api.openai.com/v1/audio/transcriptions"
-                headers = {"Authorization": f"Bearer {settings.OPENAI_API_KEY}"}
-                
+                url = "https://api.groq.com/openai/v1/audio/transcriptions"
+                headers = {"Authorization": f"Bearer {settings.GROQ_API_KEY}"}
+
                 # Setup files and model parameters
                 with open(tmp_file_path, "rb") as f:
                     files = {"file": (os.path.basename(tmp_file_path), f, "audio/ogg")}
                     data = {
-                        "model": "whisper-1",
-                        "language": source_language
+                        "model": "whisper-large-v3",
+                        "language": source_language,
                     }
                     async with httpx.AsyncClient(timeout=30.0) as client:
                         res = await client.post(url, headers=headers, files=files, data=data)
@@ -78,14 +78,14 @@ class BhashiniService:
                 if res.status_code == 200:
                     result = res.json()
                     transcription = result.get("text", "")
-                    logger.info(f"[OPENAI WHISPER] Transcription successful: '{transcription}'")
+                    logger.info(f"[GROQ WHISPER] Transcription successful: '{transcription}'")
                     return transcription
                 else:
                     logger.error(
-                        f"[OPENAI WHISPER] API returned error (status {res.status_code}): {res.text}"
+                        f"[GROQ WHISPER] API returned error (status {res.status_code}): {res.text}"
                     )
             except Exception as err:
-                logger.error(f"[OPENAI WHISPER] Connection error during transcription: {err}")
+                logger.error(f"[GROQ WHISPER] Connection error during transcription: {err}")
 
         # 2. Mock Fallback
         logger.info(
@@ -96,7 +96,7 @@ class BhashiniService:
     async def translate_text(
         self, text: str, source_lang: str, target_lang: str
     ) -> str:
-        """Translate text using OpenAI GPT model.
+        """Translate text using Groq LLM.
 
         Args:
             text: Text to translate.
@@ -106,52 +106,27 @@ class BhashiniService:
         Returns:
             Translated text.
         """
-        # 1. First attempt real OpenAI Chat completion translation
-        if settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("mock"):
-            logger.info(f"[OPENAI TRANSLATE] Translating '{text}' from {source_lang} -> {target_lang}")
-            url = "https://api.openai.com/v1/chat/completions"
-            headers = {
-                "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
-                "Content-Type": "application/json"
-            }
-            payload = {
-                "model": "gpt-4o-mini",
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": (
-                            f"You are a translation assistant. Translate the following text from language code "
-                            f"'{source_lang}' to language code '{target_lang}'. Output ONLY the translated text, "
-                            "do not include extra context or explanations."
-                        )
-                    },
-                    {"role": "user", "content": text}
-                ],
-                "temperature": 0.1
-            }
-            try:
-                async with httpx.AsyncClient(timeout=15.0) as client:
-                    res = await client.post(url, json=payload, headers=headers)
-                    if res.status_code == 200:
-                        data = res.json()
-                        translation = data["choices"][0]["message"]["content"].strip()
-                        logger.info(f"[OPENAI TRANSLATE] Translation successful: '{translation}'")
-                        return translation
-                    else:
-                        logger.error(f"[OPENAI TRANSLATE] API error (status {res.status_code}): {res.text}")
-            except Exception as err:
-                logger.error(f"[OPENAI TRANSLATE] Connection error: {err}")
+        from app.services.llm import run_llm_completion
 
-        # 2. Mock Fallback
-        logger.info(
-            f"[MOCK NMT] Translating text '{text}' from {source_lang} -> {target_lang}"
-        )
+        if settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("mock"):
+            logger.info(f"[GROQ TRANSLATE] Translating '{text}' from {source_lang} -> {target_lang}")
+            system_msg = (
+                f"You are a translation assistant. Translate the following text from language code "
+                f"'{source_lang}' to language code '{target_lang}'. Output ONLY the translated text, "
+                "do not include extra context or explanations."
+            )
+            translation = await run_llm_completion(prompt=text, system_message=system_msg)
+            if translation:
+                logger.info(f"[GROQ TRANSLATE] Translation successful: '{translation}'")
+                return translation.strip()
+
+        # Fallback to Mock
         if target_lang == "en" and source_lang == "hi":
             return "I want information about the PM Kisan scheme"
         return text
 
     async def text_to_speech(self, text: str, language: str) -> str:
-        """Synthesize text to speech using OpenAI TTS.
+        """Synthesize text to speech using gTTS.
 
         Args:
             text: Content to synthesize.
@@ -160,43 +135,29 @@ class BhashiniService:
         Returns:
             A public URL path to the synthesized audio file.
         """
-        # 1. First attempt real OpenAI TTS speech synthesis
-        if settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("mock"):
-            logger.info(f"[OPENAI TTS] Synthesizing speech for: '{text}' in language: {language}")
-            url = "https://api.openai.com/v1/audio/speech"
-            headers = {
-                "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
-                "Content-Type": "application/json"
-            }
-            payload = {
-                "model": "tts-1",
-                "input": text,
-                "voice": "alloy"
-            }
-            try:
-                # Ensure the static audio assets directory exists
-                static_audio_dir = os.path.join("backend", "static", "audio")
-                if not os.path.exists(static_audio_dir):
-                    os.makedirs(static_audio_dir, exist_ok=True)
+        logger.info(f"[gTTS] Synthesizing speech for: '{text}' in language: {language}")
+        try:
+            from gtts import gTTS
 
-                audio_filename = f"speech_{uuid.uuid4().hex}.mp3"
-                output_path = os.path.join(static_audio_dir, audio_filename)
+            # Ensure the static audio assets directory exists
+            static_audio_dir = os.path.join("backend", "static", "audio")
+            if not os.path.exists(static_audio_dir):
+                os.makedirs(static_audio_dir, exist_ok=True)
 
-                async with httpx.AsyncClient(timeout=20.0) as client:
-                    res = await client.post(url, json=payload, headers=headers)
-                    if res.status_code == 200:
-                        with open(output_path, "wb") as f:
-                            f.write(res.content)
-                        logger.info(f"[OPENAI TTS] Generated speech file at: {output_path}")
-                        # Return public relative path
-                        return f"/static/audio/{audio_filename}"
-                    else:
-                        logger.error(f"[OPENAI TTS] API error (status {res.status_code}): {res.text}")
-            except Exception as err:
-                logger.error(f"[OPENAI TTS] Connection error: {err}")
+            audio_filename = f"speech_{uuid.uuid4().hex}.mp3"
+            output_path = os.path.join(static_audio_dir, audio_filename)
 
-        # 2. Mock Fallback
-        logger.info(
-            f"[MOCK TTS] Synthesizing speech for: '{text}' in language: {language}"
-        )
+            # Map language codes to gTTS tags (hi -> hi, en -> en)
+            tts = gTTS(text=text, lang=language)
+            # Execute save in a threadpool to keep it non-blocking
+            import asyncio
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(None, tts.save, output_path)
+
+            logger.info(f"[gTTS] Generated speech file at: {output_path}")
+            return f"/static/audio/{audio_filename}"
+        except Exception as err:
+            logger.error(f"[gTTS] Failed to generate speech: {err}")
+
+        # Fallback
         return f"http://mock-bhashini-tts.local/synthesized_speech_{language}.mp3"

@@ -1,4 +1,4 @@
-"""LLM service client for querying OpenAI or fallback templates."""
+"""LLM service client for querying Groq API."""
 
 import json
 import logging
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 async def run_llm_completion(
     prompt: str, system_message: str = "You are a helpful assistant."
 ) -> str:
-    """Sends a chat completion request to the OpenAI API.
+    """Sends a chat completion request to the Groq API.
 
     Args:
         prompt: User input string.
@@ -28,14 +28,14 @@ async def run_llm_completion(
     Returns:
         Generated text response content.
     """
-    if settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("mock"):
-        url = "https://api.openai.com/v1/chat/completions"
+    if settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("mock"):
+        url = "https://api.groq.com/openai/v1/chat/completions"
         headers = {
-            "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
+            "Authorization": f"Bearer {settings.GROQ_API_KEY}",
             "Content-Type": "application/json",
         }
         payload = {
-            "model": "gpt-4o-mini",
+            "model": "llama-3.3-70b-versatile",
             "messages": [
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": prompt},
@@ -49,16 +49,16 @@ async def run_llm_completion(
                     data = res.json()
                     content = data["choices"][0]["message"]["content"]
                     logger.info(
-                        "[OPENAI LLM] GPT-4o-mini response fetched successfully."
+                        "[GROQ LLM] llama-3.3-70b-versatile response fetched successfully."
                     )
                     return content
                 else:
                     logger.warning(
-                        f"[OPENAI LLM] Failed response (status {res.status_code}): {res.text}"
+                        f"[GROQ LLM] Failed response (status {res.status_code}): {res.text}"
                     )
         except Exception as err:
             logger.warning(
-                f"[OPENAI LLM] Connection error: {err}"
+                f"[GROQ LLM] Connection error: {err}"
             )
 
     return ""
@@ -73,7 +73,7 @@ async def llm_extract_profile(query: str) -> Dict[str, Any]:
     Returns:
         Parsed attributes dictionary.
     """
-    if settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("mock"):
+    if settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("mock"):
         prompt = PROFILE_EXTRACTION_PROMPT.format(query=query)
         response_text = await run_llm_completion(
             prompt=prompt,
@@ -92,12 +92,12 @@ async def llm_extract_profile(query: str) -> Dict[str, Any]:
                 )
                 data = json.loads(cleaned)
                 logger.info(
-                    f"[OPENAI EXTRACT] Extracted parameters: {data}"
+                    f"[GROQ EXTRACT] Extracted parameters: {data}"
                 )
                 return data
             except Exception as err:
                 logger.warning(
-                    f"[OPENAI EXTRACT] Failed parsing JSON response '{response_text}': {err}"
+                    f"[GROQ EXTRACT] Failed parsing JSON response '{response_text}': {err}"
                 )
 
     # Fallback to simulation
@@ -122,7 +122,7 @@ async def llm_compose_response(
     Returns:
         Markdown response.
     """
-    if settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("mock"):
+    if settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("mock"):
         prompt = RESPONSE_COMPOSITION_PROMPT.format(
             language=language,
             profile=json.dumps(profile, indent=2),

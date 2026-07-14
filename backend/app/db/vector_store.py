@@ -210,9 +210,16 @@ class VectorStore:
                     for dw in desc_words:
                         if qw in dw or dw in qw:
                             score += 1.0
-                            break  # Avoid double counting same query word
+                            break
             results.append((score, s))
 
         # Sort descending by score
         results.sort(key=lambda x: x[0], reverse=True)
-        return [res[1] for res in results[:limit]]
+        
+        ret_schemes = []
+        for res in results[:limit]:
+            s_copy = dict(res[1])
+            s_copy.pop("embedding", None)
+            ret_schemes.append(s_copy)
+        return ret_schemes
+

@@ -1,4 +1,4 @@
-"""OCR service helper for document processing using OpenAI Vision API or mocks."""
+"""OCR service helper for document processing using Groq Vision API or mocks."""
 
 import base64
 import json
@@ -20,21 +20,21 @@ class OCRService:
     ) -> Dict[str, Any]:
         """Extracts fields from document photos (Aadhaar, Income, Land, etc.).
 
-        If an OPENAI_API_KEY is active, uses GPT-4o-mini Vision in the cloud for real OCR.
+        If a GROQ_API_KEY is active, uses Llama 4 Scout Vision in the cloud for real OCR.
         Otherwise, falls back to high-fidelity mock data.
         """
         hint = filename_hint.lower()
 
-        # 1. Use OpenAI Vision if API key is active
-        if settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("mock"):
+        # 1. Use Groq Vision if API key is active
+        if settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("mock"):
             logger.info(
-                f"[OPENAI VISION OCR] Parsing document: hint={filename_hint} | size={len(image_bytes)} bytes"
+                f"[GROQ VISION OCR] Parsing document: hint={filename_hint} | size={len(image_bytes)} bytes"
             )
             try:
                 base64_img = base64.b64encode(image_bytes).decode("utf-8")
-                url = "https://api.openai.com/v1/chat/completions"
+                url = "https://api.groq.com/openai/v1/chat/completions"
                 headers = {
-                    "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
+                    "Authorization": f"Bearer {settings.GROQ_API_KEY}",
                     "Content-Type": "application/json",
                 }
 
@@ -52,7 +52,7 @@ class OCRService:
                 )
 
                 payload = {
-                    "model": "gpt-4o-mini",
+                    "model": "meta-llama/llama-4-scout-17b-16e-instruct",
                     "messages": [
                         {
                             "role": "user",
@@ -78,7 +78,7 @@ class OCRService:
                         content = result["choices"][0]["message"]["content"].strip()
                         extracted_fields = json.loads(content)
                         logger.info(
-                            f"[OPENAI VISION OCR] Successfully parsed fields: {extracted_fields}"
+                            f"[GROQ VISION OCR] Successfully parsed fields: {extracted_fields}"
                         )
 
                         doc_type = "unknown"
@@ -95,11 +95,11 @@ class OCRService:
                         }
                     else:
                         logger.warning(
-                            f"[OPENAI VISION OCR] API error (status {res.status_code}): {res.text}"
+                            f"[GROQ VISION OCR] API error (status {res.status_code}): {res.text}"
                         )
             except Exception as err:
                 logger.warning(
-                    f"[OPENAI VISION OCR] Connection or parsing error: {err}"
+                    f"[GROQ VISION OCR] Connection or parsing error: {err}"
                 )
 
         # 2. Mock Fallback
