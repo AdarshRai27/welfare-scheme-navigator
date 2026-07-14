@@ -32,6 +32,41 @@ app.mount("/static", StaticFiles(directory=static_dir), name="static")
 app.include_router(webhook_router)
 
 
+@app.on_event("startup")
+async def startup_event():
+    """Seed mock database lists on server startup for preview modes."""
+    try:
+        from app.db.vector_store import VectorStore
+        vs = VectorStore()
+        if not vs._in_memory_schemes:
+            await vs.add_scheme({
+                "name": "PM-Kisan Samman Nidhi",
+                "issuing_body": "Ministry of Agriculture",
+                "state": "Uttar Pradesh",
+                "category": "Agriculture",
+                "description": "Financial support for landowning farmers across India",
+                "eligibility_rules": {
+                    "min_age": 18,
+                    "income_limit": 999999999,
+                    "requires_land": True,
+                }
+            })
+            await vs.add_scheme({
+                "name": "UP Senior Pension Scheme",
+                "issuing_body": "Social Welfare Department",
+                "state": "Uttar Pradesh",
+                "category": "Pension",
+                "description": "Old age pension support for citizens in UP",
+                "eligibility_rules": {
+                    "min_age": 60,
+                    "income_limit": 46080,
+                }
+            })
+            logger.info("[STARTUP] Auto-seeded local mock schemes successfully.")
+    except Exception as err:
+        logger.error(f"[STARTUP] Failed auto-seeding local mock schemes: {err}")
+
+
 @app.get("/internal/health")
 async def health_check() -> Dict[str, str]:
     """Endpoint for basic container health checks.
