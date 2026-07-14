@@ -24,7 +24,8 @@ async def extract_profile_node(state: Dict[str, Any]) -> Dict[str, Any]:
     query = state.get("user_query", "")
     profile = state.get("extracted_profile", {}).copy()
 
-    if query:
+    # Skip parameter extraction for system-generated triggers (e.g., OCR notifications)
+    if query and not query.startswith("Extracted"):
         try:
             # Simulate or trigger LLM call to extract parameters
             extracted_json = simulate_llm_call(

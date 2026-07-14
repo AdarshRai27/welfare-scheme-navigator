@@ -3,7 +3,9 @@
 import logging
 from typing import Dict
 
+import os
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from app.api.webhook import router as webhook_router
 
@@ -20,6 +22,11 @@ app = FastAPI(
     description="FastAPI orchestrator handling WhatsApp messages, OCR pipelines, and the reasoning agent.",
     version="0.1.0",
 )
+
+# Mount static files folder for download retrieval
+static_dir = "backend/static"
+os.makedirs(static_dir, exist_ok=True)
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 # Include webhook route paths
 app.include_router(webhook_router)

@@ -6,17 +6,19 @@ from typing import Any, Dict, Optional
 from fastapi import APIRouter, Header, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse
 
+from app.agent.graph import run_agent
 from app.core.config import settings
 from app.core.session import SessionManager
 from app.services.bhashini import BhashiniService
 from app.services.ocr import OCRService
+from app.services.pdf_filler import FormFillerService
 from app.services.whatsapp import WhatsAppService
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/webhook")
 
-# Initialize WhatsApp, Bhashini, OCR, and Session managers using global settings
+# Initialize managers and services
 whatsapp_service = WhatsAppService(
     token=settings.WHATSAPP_ACCESS_TOKEN,
     phone_number_id=settings.WHATSAPP_PHONE_NUMBER_ID,
@@ -28,6 +30,7 @@ bhashini_service = BhashiniService(
     pipeline_id=settings.BHASHINI_PIPELINE_ID,
 )
 ocr_service = OCRService()
+form_filler_service = FormFillerService()
 
 
 @router.get("/whatsapp", response_class=PlainTextResponse)
@@ -113,15 +116,16 @@ async def receive_webhook(
                         "extracted_profile": {},
                     }
 
+                # Process incoming input types
+                query_for_agent = ""
+                doc_type = ""
+
                 if msg_type == "text":
                     text_body = message.get("text", {}).get("body", "")
                     logger.info(
                         f"Received text from {user_phone}: {text_body}"
                     )
-                    await whatsapp_service.send_text_message(
-                        to_phone=user_phone,
-                        text=f"Mock Echo: {text_body}",
-                    )
+                    query_for_agent = text_body
                 elif msg_type == "audio":
                     audio_id = message.get("audio", {}).get("id", "")
                     logger.info(
@@ -146,11 +150,7 @@ async def receive_webhook(
                         source_lang=source_lang,
                         target_lang="en",
                     )
-
-                    await whatsapp_service.send_text_message(
-                        to_phone=user_phone,
-                        text=f"Mock Echo: Transcribed voice note to: '{transcription}' (English: '{english_query}')",
-                    )
+                    query_for_agent = english_query
                 elif msg_type == "image":
                     image_id = message.get("image", {}).get("id", "")
                     logger.info(
@@ -170,15 +170,55 @@ async def receive_webhook(
 
                     # 3. Merge newly extracted data into the profile (Option A retention)
                     session["extracted_profile"].update(extracted_fields)
-
-                    await whatsapp_service.send_text_message(
-                        to_phone=user_phone,
-                        text=f"Mock Echo: Extracted {doc_type} fields: {extracted_fields}",
-                    )
+                    query_for_agent = f"Extracted {doc_type} parameters"
                 else:
                     logger.info(
                         f"Received unsupported message type '{msg_type}' from {user_phone}"
                     )
+                    continue
+
+                # Run LangGraph reasoning workflow agent
+                result = await run_agent(
+                    user_query=query_for_agent,
+                    extracted_profile=session["extracted_profile"],
+                    language=session.get("preferred_language", "hi"),
+                )
+
+                # Sync extracted fields back to user session profile
+                session["extracted_profile"].update(
+                    result.get("extracted_profile", {})
+                )
+
+                agent_reply = result.get("reply_text", "")
+
+                # If eligible schemes exist, prepare pre-filled form JSON attachments
+                eligible = result.get("eligible_schemes", [])
+                if eligible:
+                    form_links = []
+                    for s in eligible:
+                        form_meta = form_filler_service.fill_form(
+                            s["name"], session["extracted_profile"]
+                        )
+                        form_links.append(
+                            f"📄 Pre-filled Form ({s['name']}): {form_meta['download_url']}"
+                        )
+                    if form_links:
+                        if session.get("preferred_language") == "hi":
+                            agent_reply += (
+                                "\n\n📥 **आवेदन पत्र (पूर्व-भरे हुए) डाउनलोड करें:**\n"
+                                + "\n".join(form_links)
+                            )
+                        else:
+                            agent_reply += (
+                                "\n\n📥 **Download Pre-filled Application Forms:**\n"
+                                + "\n".join(form_links)
+                            )
+
+                # Send back the compiled formatted checklist/response
+                await whatsapp_service.send_text_message(
+                    to_phone=user_phone,
+                    text=agent_reply,
+                )
 
                 # Persist updated session state back to store
                 await session_manager.save_session(user_phone, session)
