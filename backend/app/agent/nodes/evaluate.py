@@ -33,12 +33,12 @@ async def evaluate_rules_node(state: Dict[str, Any]) -> Dict[str, Any]:
                 is_eligible = False
 
         # 2. Evaluate Income Limits
-        if "income_limit" in rules and "annual_income" in profile:
+        if "income_limit" in rules and profile.get("annual_income") is not None:
             if profile["annual_income"] > rules["income_limit"]:
                 is_eligible = False
 
         # 3. Evaluate Land Size Thresholds
-        if "land_size_limit" in rules and "land_size_hectares" in profile:
+        if "land_size_limit" in rules and profile.get("land_size_hectares") is not None:
             if profile["land_size_hectares"] > rules["land_size_limit"]:
                 is_eligible = False
 
