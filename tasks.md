@@ -56,6 +56,7 @@ None.
 - [x] Created index.html, index.css, and index.js for side-by-side WhatsApp simulator
 - [x] Integrated real-time Groq Cloud LLM completion and fallback wrapper in llm.py
 - [x] Implemented diagnostics endpoints (GET and DELETE) to read/reset sessions
+- [x] Integrated real-time OpenAI Whisper (ASR), translation, and OpenAI TTS in bhashini.py
 - [x] Verified Web Chat Simulator pipelines via automated tests (18/18 tests passing)
 
 ## Open Decisions Needing Team Input
