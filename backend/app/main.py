@@ -23,8 +23,9 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# Mount static files folder for download retrieval
-static_dir = "backend/static"
+# Mount static files folder dynamically relative to application directory
+current_file_dir = os.path.dirname(os.path.abspath(__file__))
+static_dir = os.path.join(os.path.dirname(current_file_dir), "static")
 os.makedirs(static_dir, exist_ok=True)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
