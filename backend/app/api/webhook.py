@@ -224,3 +224,53 @@ async def receive_webhook(
                 await session_manager.save_session(user_phone, session)
 
     return {"status": "accepted"}
+
+
+@router.post("/diagnostics/seed")
+async def seed_diagnostics_schemes() -> Dict[str, str]:
+    """Seeds the in-memory/fallback database store with default test schemes."""
+    from app.db.vector_store import VectorStore
+
+    store = VectorStore()
+    # Reset existing records first
+    store._in_memory_schemes.clear()
+
+    # Seed agricultural scheme
+    await store.add_scheme(
+        {
+            "name": "PM-Kisan Samman Nidhi",
+            "issuing_body": "Central",
+            "category": "Agriculture",
+            "description": "Financial support for landowning farmers across India",
+            "eligibility_rules": {
+                "land_size_limit": 2.0,
+            },
+            "source_url": "https://pmkisan.gov.in",
+        }
+    )
+
+    # Seed state pension scheme
+    await store.add_scheme(
+        {
+            "name": "UP Senior Pension Scheme",
+            "issuing_body": "State",
+            "state": "Uttar Pradesh",
+            "category": "Pension",
+            "description": "Old age pension support for citizens in UP",
+            "eligibility_rules": {
+                "min_age": 60,
+                "income_limit": 46080,
+            },
+        }
+    )
+
+    logger.info("[DIAGNOSTICS] Seeded mock schemes successfully.")
+    return {"status": "seeded"}
+
+
+@router.get("/diagnostics/session/{phone}")
+async def get_session_diagnostics(phone: str) -> Dict[str, Any]:
+    """Diagnostic endpoint to retrieve current session details."""
+    state = await session_manager.get_session(phone)
+    return state or {}
+
