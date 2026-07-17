@@ -37,76 +37,22 @@ app.include_router(webhook_router)
 async def startup_event():
     """Seed mock database lists on server startup for preview modes."""
     try:
+        import json
         from app.db.vector_store import VectorStore
         vs = VectorStore()
         if not vs._in_memory_schemes:
-            # 1. PM-Kisan
-            await vs.add_scheme({
-                "name": "PM-Kisan Samman Nidhi",
-                "issuing_body": "Ministry of Agriculture",
-                "state": "Uttar Pradesh",
-                "category": "Agriculture",
-                "description": "Financial support for landowning farmers across India",
-                "eligibility_rules": {
-                    "min_age": 18,
-                    "income_limit": 999999999,
-                    "requires_land": True,
-                }
-            })
-            # 2. UP Senior Pension
-            await vs.add_scheme({
-                "name": "UP Senior Pension Scheme",
-                "issuing_body": "Social Welfare Department",
-                "state": "Uttar Pradesh",
-                "category": "Pension",
-                "description": "Old age pension support for citizens in UP",
-                "eligibility_rules": {
-                    "min_age": 60,
-                    "income_limit": 46080,
-                }
-            })
-            # 3. UP Kanya Sumangala Yojana (Women/Girls)
-            await vs.add_scheme({
-                "name": "UP Kanya Sumangala Yojana",
-                "issuing_body": "Women and Child Development Department",
-                "state": "Uttar Pradesh",
-                "category": "Women & Child",
-                "description": "Financial assistance for girls' education, health, and welfare in Uttar Pradesh",
-                "eligibility_rules": {
-                    "min_age": 0,
-                    "max_age": 25,
-                    "income_limit": 300000,
-                    "gender": "female",
-                }
-            })
-            # 4. UP Free Tablet Smartphone Scheme (Education/Youth)
-            await vs.add_scheme({
-                "name": "UP Free Tablet Smartphone Yojana",
-                "issuing_body": "Department of IT and Electronics",
-                "state": "Uttar Pradesh",
-                "category": "Education",
-                "description": "Free tablets and smartphones for college students and youth pursuing higher education in Uttar Pradesh",
-                "eligibility_rules": {
-                    "min_age": 18,
-                    "max_age": 35,
-                    "income_limit": 200000,
-                }
-            })
-            # 5. Ayushman Bharat Yojana (Health)
-            await vs.add_scheme({
-                "name": "Ayushman Bharat Yojana",
-                "issuing_body": "National Health Authority",
-                "state": "Uttar Pradesh",
-                "category": "Health",
-                "description": "Universal health insurance coverage providing up to ₹5 Lakhs per family per year for hospitalization",
-                "eligibility_rules": {
-                    "income_limit": 250000,
-                }
-            })
-            logger.info("[STARTUP] Auto-seeded local mock schemes successfully.")
+            current_file_dir = os.path.dirname(os.path.abspath(__file__))
+            seed_path = os.path.join(current_file_dir, "db", "schemes_seed.json")
+            if os.path.exists(seed_path):
+                with open(seed_path, "r", encoding="utf-8") as f:
+                    schemes = json.load(f)
+                    for scheme in schemes:
+                        await vs.add_scheme(scheme)
+                logger.info(f"[STARTUP] Auto-seeded {len(schemes)} mock schemes from JSON successfully.")
+            else:
+                logger.warning(f"[STARTUP] Seed file not found at: {seed_path}")
     except Exception as err:
         logger.error(f"[STARTUP] Failed auto-seeding local mock schemes: {err}")
-
 
 @app.get("/internal/health")
 async def health_check() -> Dict[str, str]:

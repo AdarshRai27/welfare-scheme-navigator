@@ -1,0 +1,567 @@
+[
+    {
+        "name": "PM-Kisan Samman Nidhi",
+        "issuing_body": "Ministry of Agriculture",
+        "state": "Uttar Pradesh",
+        "category": "Agriculture",
+        "description": "Financial support of ₹6,000 per year for landowning farmers across India.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "income_limit": 999999999,
+            "requires_land": true
+        }
+    },
+    {
+        "name": "UP Senior Pension Scheme",
+        "issuing_body": "Social Welfare Department",
+        "state": "Uttar Pradesh",
+        "category": "Pension",
+        "description": "Old age pension monthly assistance of ₹1,000 for senior citizens in UP.",
+        "eligibility_rules": {
+            "min_age": 60,
+            "income_limit": 46080
+        }
+    },
+    {
+        "name": "UP Kanya Sumangala Yojana",
+        "issuing_body": "Women and Child Development Department",
+        "state": "Uttar Pradesh",
+        "category": "Women & Child",
+        "description": "Financial assistance of ₹15,000 for girls' education, health, and welfare in Uttar Pradesh.",
+        "eligibility_rules": {
+            "min_age": 0,
+            "max_age": 25,
+            "income_limit": 300000,
+            "gender": "female"
+        }
+    },
+    {
+        "name": "UP Free Tablet Smartphone Yojana",
+        "issuing_body": "Department of IT and Electronics",
+        "state": "Uttar Pradesh",
+        "category": "Education",
+        "description": "Free tablets and smartphones for college students and youth pursuing higher education in Uttar Pradesh.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "max_age": 35,
+            "income_limit": 200000
+        }
+    },
+    {
+        "name": "Ayushman Bharat Yojana",
+        "issuing_body": "National Health Authority",
+        "state": "All India",
+        "category": "Health",
+        "description": "Universal health insurance coverage providing up to ₹5 Lakhs per family per year for secondary and tertiary hospitalization.",
+        "eligibility_rules": {
+            "income_limit": 250000
+        }
+    },
+    {
+        "name": "Pradhan Mantri Awas Yojana - Gramin",
+        "issuing_body": "Ministry of Rural Development",
+        "state": "All India",
+        "category": "Housing",
+        "description": "Provides financial assistance of ₹1.2 Lakhs to rural families for constructing pucca houses with basic amenities.",
+        "eligibility_rules": {
+            "income_limit": 300000
+        }
+    },
+    {
+        "name": "UP Widow Pension Scheme",
+        "issuing_body": "Social Welfare Department",
+        "state": "Uttar Pradesh",
+        "category": "Women & Child",
+        "description": "Pension assistance of ₹1,000 per month for widows residing in Uttar Pradesh.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "gender": "female",
+            "income_limit": 200000
+        }
+    },
+    {
+        "name": "Pradhan Mantri Ujjwala Yojana",
+        "issuing_body": "Ministry of Petroleum and Natural Gas",
+        "state": "All India",
+        "category": "Energy & Power",
+        "description": "Free LPG connections and cylinder support to women from below poverty line (BPL) households.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "gender": "female",
+            "income_limit": 150000
+        }
+    },
+    {
+        "name": "UP Divyangjan Pension Yojana",
+        "issuing_body": "Social Welfare Department",
+        "state": "Uttar Pradesh",
+        "category": "Pension",
+        "description": "Financial monthly assistance of ₹1,000 for disabled persons (40% or more disability) in Uttar Pradesh.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "income_limit": 46080
+        }
+    },
+    {
+        "name": "Pradhan Mantri Shram Yogi Maan-dhan",
+        "issuing_body": "Ministry of Labour and Employment",
+        "state": "All India",
+        "category": "Pension",
+        "description": "Voluntary and contributory pension scheme for unorganized sector workers providing ₹3,000/month after age 60.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "max_age": 40,
+            "income_limit": 180000
+        }
+    },
+    {
+        "name": "UP Shadi Bimari Yojana",
+        "issuing_body": "Social Welfare Department",
+        "state": "Uttar Pradesh",
+        "category": "Women & Child",
+        "description": "Financial marriage grant of ₹20,000 for daughters of poor families in Uttar Pradesh.",
+        "eligibility_rules": {
+            "income_limit": 56460
+        }
+    },
+    {
+        "name": "National Social Assistance Programme - IGNDPS",
+        "issuing_body": "Ministry of Rural Development",
+        "state": "All India",
+        "category": "Pension",
+        "description": "Disability pension for BPL citizens aged between 18 and 79 with severe or multiple disabilities.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "max_age": 79,
+            "income_limit": 100000
+        }
+    },
+    {
+        "name": "UP Free Cycle Scheme",
+        "issuing_body": "Labour Department",
+        "state": "Uttar Pradesh",
+        "category": "Labour Support",
+        "description": "Provides free cycles to registered construction laborers in Uttar Pradesh to commute to work.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "max_age": 60
+        }
+    },
+    {
+        "name": "Pradhan Mantri Mudra Yojana - Shishu",
+        "issuing_body": "Ministry of Finance",
+        "state": "All India",
+        "category": "Business Loan",
+        "description": "Collateral-free loans up to ₹50,000 for starting small businesses or shops.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "income_limit": 999999999
+        }
+    },
+    {
+        "name": "Pradhan Mantri Mudra Yojana - Kishor",
+        "issuing_body": "Ministry of Finance",
+        "state": "All India",
+        "category": "Business Loan",
+        "description": "Collateral-free business loans between ₹50,000 and ₹5 Lakhs for expanding micro enterprises.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "income_limit": 999999999
+        }
+    },
+    {
+        "name": "Pradhan Mantri Mudra Yojana - Tarun",
+        "issuing_body": "Ministry of Finance",
+        "state": "All India",
+        "category": "Business Loan",
+        "description": "Collateral-free business expansion loans between ₹5 Lakhs and ₹10 Lakhs for established businesses.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "income_limit": 999999999
+        }
+    },
+    {
+        "name": "Atal Pension Yojana",
+        "issuing_body": "Pension Fund Regulatory and Development Authority",
+        "state": "All India",
+        "category": "Pension",
+        "description": "Government-backed pension scheme providing monthly pension of ₹1,000 to ₹5,000 after age 60.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "max_age": 40,
+            "income_limit": 500000
+        }
+    },
+    {
+        "name": "Pradhan Mantri Suraksha Bima Yojana",
+        "issuing_body": "Ministry of Finance",
+        "state": "All India",
+        "category": "Insurance",
+        "description": "Accidental death and disability insurance cover of ₹2 Lakhs at a premium of just ₹20 per year.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "max_age": 70
+        }
+    },
+    {
+        "name": "Pradhan Mantri Jeevan Jyoti Bima Yojana",
+        "issuing_body": "Ministry of Finance",
+        "state": "All India",
+        "category": "Insurance",
+        "description": "Life insurance cover of ₹2 Lakhs in case of death due to any reason, at a premium of ₹436 per year.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "max_age": 50
+        }
+    },
+    {
+        "name": "PM Street Vendor AtmaNirbhar Nidhi",
+        "issuing_body": "Ministry of Housing and Urban Affairs",
+        "state": "All India",
+        "category": "Business Loan",
+        "description": "Special micro-credit facility providing working capital loans up to ₹10,000 for street vendors.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "income_limit": 180000
+        }
+    },
+    {
+        "name": "PM Vishwakarma Scheme",
+        "issuing_body": "Ministry of Micro, Small and Medium Enterprises",
+        "state": "All India",
+        "category": "Labour Support",
+        "description": "Skill training, toolkit incentive of ₹15,000, and low-interest collateral-free loans for traditional artisans and craftsmen.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "income_limit": 400000
+        }
+    },
+    {
+        "name": "UP Post-Matric Scholarship Scheme",
+        "issuing_body": "Social Welfare Department",
+        "state": "Uttar Pradesh",
+        "category": "Education",
+        "description": "Tuition fee reimbursement and maintenance stipend for UP students studying in Class 11, 12, or higher courses.",
+        "eligibility_rules": {
+            "min_age": 15,
+            "income_limit": 200000
+        }
+    },
+    {
+        "name": "UP Pre-Matric Scholarship Scheme",
+        "issuing_body": "Social Welfare Department",
+        "state": "Uttar Pradesh",
+        "category": "Education",
+        "description": "Financial scholarship for students studying in Class 9 and 10 in Uttar Pradesh schools.",
+        "eligibility_rules": {
+            "min_age": 12,
+            "max_age": 18,
+            "income_limit": 100000
+        }
+    },
+    {
+        "name": "Mahatma Gandhi National Rural Employment Guarantee Act",
+        "issuing_body": "Ministry of Rural Development",
+        "state": "All India",
+        "category": "Employment",
+        "description": "Provides at least 100 days of guaranteed wage employment in a financial year to every rural household whose adult members volunteer to do unskilled manual work.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "income_limit": 999999999
+        }
+    },
+    {
+        "name": "Deen Dayal Upadhyaya Grameen Kaushalya Yojana",
+        "issuing_body": "Ministry of Rural Development",
+        "state": "All India",
+        "category": "Employment",
+        "description": "Placement-linked skill training program for rural poor youth to enhance employability and income.",
+        "eligibility_rules": {
+            "min_age": 15,
+            "max_age": 35,
+            "income_limit": 150000
+        }
+    },
+    {
+        "name": "Prime Minister Employment Generation Programme",
+        "issuing_body": "Ministry of Micro, Small and Medium Enterprises",
+        "state": "All India",
+        "category": "Business Loan",
+        "description": "Credit-linked subsidy program for setting up new micro-enterprises in manufacturing or service sectors, offering subsidies up to 35%.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "income_limit": 999999999
+        }
+    },
+    {
+        "name": "National Means-cum-Merit Scholarship",
+        "issuing_body": "Department of School Education and Literacy",
+        "state": "All India",
+        "category": "Education",
+        "description": "Scholarship of ₹12,000 per year awarded to meritorious students from economically weaker sections to prevent drop-outs after Class 8.",
+        "eligibility_rules": {
+            "min_age": 12,
+            "max_age": 16,
+            "income_limit": 350000
+        }
+    },
+    {
+        "name": "Pradhan Mantri Fasal Bima Yojana",
+        "issuing_body": "Ministry of Agriculture",
+        "state": "All India",
+        "category": "Agriculture",
+        "description": "Crop insurance scheme offering financial support to farmers suffering crop loss or damage due to natural calamities.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "requires_land": true
+        }
+    },
+    {
+        "name": "Kisan Credit Card Scheme",
+        "issuing_body": "National Bank for Agriculture and Rural Development",
+        "state": "All India",
+        "category": "Agriculture",
+        "description": "Provides farmers with timely credit cards to meet their cultivation and crop production needs at a very low interest rate.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "requires_land": true
+        }
+    },
+    {
+        "name": "UP Mukhyamantri Abhyuday Yojana",
+        "issuing_body": "Social Welfare Department",
+        "state": "Uttar Pradesh",
+        "category": "Education",
+        "description": "Free coaching classes (physical and virtual) for competitive exams like UPSC, JEE, NEET, and NDA for students in UP.",
+        "eligibility_rules": {
+            "min_age": 17,
+            "max_age": 30,
+            "income_limit": 300000
+        }
+    },
+    {
+        "name": "UP Bhagirathi River Fishery Scheme",
+        "issuing_body": "Fisheries Department",
+        "state": "Uttar Pradesh",
+        "category": "Agriculture",
+        "description": "Financial assistance and subsidies to fishermen and fish breeders for river farming and boat purchasing.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "income_limit": 200000
+        }
+    },
+    {
+        "name": "Pradhan Mantri Matsya Sampada Yojana",
+        "issuing_body": "Department of Fisheries",
+        "state": "All India",
+        "category": "Agriculture",
+        "description": "Flagship scheme for sustainable development of the fisheries sector, supporting aquaculture, deep sea fishing, and cold chain infrastructure.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "income_limit": 500000
+        }
+    },
+    {
+        "name": "UP Gopalak Yojana",
+        "issuing_body": "Animal Husbandry Department",
+        "state": "Uttar Pradesh",
+        "category": "Agriculture",
+        "description": "Loans up to ₹9 Lakhs for unemployed youth in Uttar Pradesh to establish dairy farms with 10 to 20 cattle.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "max_age": 40,
+            "income_limit": 150000
+        }
+    },
+    {
+        "name": "UP Kamdhenu Dairy Scheme",
+        "issuing_body": "Animal Husbandry Department",
+        "state": "Uttar Pradesh",
+        "category": "Agriculture",
+        "description": "Capital subsidy and commercial bank loans for starting high-yield milk-producing dairy centers in rural UP.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "income_limit": 300000
+        }
+    },
+    {
+        "name": "UP Solar Pump Yojana",
+        "issuing_body": "Agriculture Department",
+        "state": "Uttar Pradesh",
+        "category": "Agriculture",
+        "description": "Provides up to 60% subsidy to farmers for installing solar water pumps for agricultural irrigation.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "requires_land": true
+        }
+    },
+    {
+        "name": "UP Atal Residential School Admission Scheme",
+        "issuing_body": "Labour Department",
+        "state": "Uttar Pradesh",
+        "category": "Education",
+        "description": "Free high-quality residential boarding school education (class 6 to 12) for the children of registered laborers.",
+        "eligibility_rules": {
+            "min_age": 10,
+            "max_age": 13
+        }
+    },
+    {
+        "name": "UP Matritva Shishu Evam Balika Madad Yojana",
+        "issuing_body": "Building and Other Construction Workers Welfare Board",
+        "state": "Uttar Pradesh",
+        "category": "Labour Support",
+        "description": "Financial assistance of ₹25,000 for maternity costs and newborn child care to registered construction workers.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "income_limit": 200000
+        }
+    },
+    {
+        "name": "UP Shramik Awas Sahayata Yojana",
+        "issuing_body": "Labour Department",
+        "state": "Uttar Pradesh",
+        "category": "Housing",
+        "description": "Financial aid of ₹1 Lakh for house construction or repairs to registered building construction laborers.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "max_age": 60,
+            "income_limit": 150000
+        }
+    },
+    {
+        "name": "UP Mukhyamantri Bal Seva Yojana",
+        "issuing_body": "Women and Child Development Department",
+        "state": "Uttar Pradesh",
+        "category": "Social Welfare",
+        "description": "Financial assistance of ₹4,000 per month for orphans or children who lost breadwinners to pandemics.",
+        "eligibility_rules": {
+            "min_age": 0,
+            "max_age": 18
+        }
+    },
+    {
+        "name": "Sovereign Gold Bond Scheme",
+        "issuing_body": "Reserve Bank of India",
+        "state": "All India",
+        "category": "Investment",
+        "description": "Government securities denominated in grams of gold, offering a secure gold investment with 2.5% annual interest.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "income_limit": 999999999
+        }
+    },
+    {
+        "name": "Stand-Up India Scheme",
+        "issuing_body": "Ministry of Finance",
+        "state": "All India",
+        "category": "Business Loan",
+        "description": "Bank loans between ₹10 Lakhs and ₹1 Crore to at least one SC/ST borrower and one woman borrower per bank branch for setting up a greenfield enterprise.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "income_limit": 999999999
+        }
+    },
+    {
+        "name": "Sukanya Samriddhi Yojana",
+        "issuing_body": "Ministry of Finance",
+        "state": "All India",
+        "category": "Investment",
+        "description": "A high-interest savings scheme targeted at parents of girl children to build a fund for their higher education and marriage.",
+        "eligibility_rules": {
+            "min_age": 0,
+            "max_age": 10,
+            "gender": "female"
+        }
+    },
+    {
+        "name": "UP Sant Ravidas Shiksha Sahayata Yojana",
+        "issuing_body": "Labour Board",
+        "state": "Uttar Pradesh",
+        "category": "Education",
+        "description": "Monthly education stipend from ₹150 to ₹2,000 for children of registered laborers studying in class 1 to higher degrees.",
+        "eligibility_rules": {
+            "min_age": 6,
+            "max_age": 25
+        }
+    },
+    {
+        "name": "UP Kaushal Vikas Mission Training Scheme",
+        "issuing_body": "Department of Vocational Education and Skill Development",
+        "state": "Uttar Pradesh",
+        "category": "Employment",
+        "description": "Free skill training and certification in high-demand industrial sectors for unemployed youth in UP.",
+        "eligibility_rules": {
+            "min_age": 14,
+            "max_age": 35,
+            "income_limit": 200000
+        }
+    },
+    {
+        "name": "UP ODOP Toolkit Training Scheme",
+        "issuing_body": "Department of MSME and Export Promotion",
+        "state": "Uttar Pradesh",
+        "category": "Labour Support",
+        "description": "Skill upgrade training and free modern toolkits distributed to local artisans under the One District One Product scheme.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "income_limit": 300000
+        }
+    },
+    {
+        "name": "PM Programme for Restoration Awareness Generation Nourishment of Mother Earth",
+        "issuing_body": "Ministry of Chemical and Fertilizers",
+        "state": "All India",
+        "category": "Agriculture",
+        "description": "Promotes balanced use of chemical fertilizers along with organic and bio-fertilizers, offering subsidies on soil health testing.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "requires_land": true
+        }
+    },
+    {
+        "name": "UP Free Boring Scheme",
+        "issuing_body": "Minor Irrigation Department",
+        "state": "Uttar Pradesh",
+        "category": "Agriculture",
+        "description": "Provides financial grant and boring facilities to small and marginal farmers in UP for irrigation tube wells.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "requires_land": true
+        }
+    },
+    {
+        "name": "UP Mukhyamantri Audyogik Kushta Pension",
+        "issuing_body": "Social Welfare Department",
+        "state": "Uttar Pradesh",
+        "category": "Pension",
+        "description": "Monthly pension assistance of ₹3,000 for leprosy-affected individuals residing in UP.",
+        "eligibility_rules": {
+            "min_age": 18,
+            "income_limit": 100000
+        }
+    },
+    {
+        "name": "National Career Service Portal Registration",
+        "issuing_body": "Ministry of Labour and Employment",
+        "state": "All India",
+        "category": "Employment",
+        "description": "A single-point platform offering job matching, career counseling, and vocational guidance to job seekers across India.",
+        "eligibility_rules": {
+            "min_age": 15,
+            "max_age": 59
+        }
+    },
+    {
+        "name": "Central Sector Scheme of Scholarship for College and University Students",
+        "issuing_body": "Department of Higher Education",
+        "state": "All India",
+        "category": "Education",
+        "description": "Scholarship awarded to top 80th percentile board students pursuing graduate or post-graduate courses, providing ₹12,000 per year.",
+        "eligibility_rules": {
+            "min_age": 17,
+            "max_age": 25,
+            "income_limit": 450000
+        }
+    }
+]
