@@ -420,3 +420,51 @@ body {
     white-space: pre-wrap;
     min-height: 0;
 }
+
+/* Screening Guide Card styling */
+.guide-card {
+    border-left: 3px solid var(--diag-accent) !important;
+    background: rgba(0, 229, 255, 0.02) !important;
+}
+
+.guide-card h2 {
+    color: var(--diag-accent) !important;
+}
+
+.guide-card p {
+    font-size: 0.85rem;
+    line-height: 1.45;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+}
+
+.guide-card ul {
+    list-style-type: none;
+    margin-top: 8px;
+}
+
+.guide-card li {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    margin-bottom: 8px;
+    color: var(--text-dim);
+    position: relative;
+    padding-left: 15px;
+}
+
+.guide-card li::before {
+    content: "•";
+    color: var(--diag-accent);
+    font-weight: bold;
+    position: absolute;
+    left: 0;
+}
+
+.badge {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: var(--text-main);
+}

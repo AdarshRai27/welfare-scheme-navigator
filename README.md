@@ -1,4 +1,14 @@
+
 # Sarkari Sahayak — Agentic Welfare Scheme Navigator
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/AdarshRai27/welfare-scheme-navigator)
+
+---
+
+### 🌐 Live Screening Prototype
+Experience the live web simulator right now: **[welfare-scheme-navigator.onrender.com/static/index.html](https://welfare-scheme-navigator.onrender.com/static/index.html)**
+
+---
 
 Sarkari Sahayak is a multilingual, document-aware, agentic RAG system built to simplify access to government welfare schemes in India. Operating natively via a simulated WhatsApp interface, it allows rural and semi-literate citizens to speak or write their queries, upload identity/income certificates, verify eligibility, and receive pre-filled application forms.
 
@@ -16,14 +26,13 @@ Sarkari Sahayak resolves this by acting as an **agentic counselor** on WhatsApp�
 
 ## 🚀 Key Features
 
-* **🎙️ Multilingual Voice Processing:** Users can speak naturally in their local dialect. The system integrates **OpenAI Whisper** for transcribing audio notes and translates them into search vectors.
-* **🪪 Privacy-First Document OCR:** Users upload photos of documents (like Aadhaar cards and Income Certificates). The system runs **Tesseract OCR locally** on your server to parse demographic variables. Sensitive PII is stored strictly in short-lived Redis session states and never persisted in database tables (Option A Privacy compliance).
+* **🎙️ Multilingual Voice Processing:** Users can speak naturally in their local dialect. The system integrates **Groq Whisper (`whisper-large-v3`)** for transcribing audio notes and translates them into search vectors.
+* **🪪 Privacy-First Document OCR:** Users upload photos of documents (like Aadhaar cards and Income Certificates). The system runs **Groq Llama 4 Scout Vision (`meta-llama/llama-4-scout-17b-16e-instruct`)** in the cloud to parse demographic variables. Sensitive PII is stored strictly in short-lived Redis session states and never persisted in database tables (Option A Privacy compliance).
 * **🧠 LangGraph State Machine:** Uses a compiled graph architecture (`extract` ➔ `retrieve` ➔ `evaluate` ➔ `chain` ➔ `compose`) to run multi-turn conversational agents.
 * **⛓️ Forward-Chaining Rule Engine:** When a user qualifies for a primary scheme (e.g., PM-Kisan), the engine automatically infers and suggests related schemes (e.g., Kisan Credit Card, Crop Insurance).
+* **🔊 Keyless Speech Synthesis:** Bot counseling responses are synthesized back into fluent spoken audio using **gTTS** (Google Text-to-Speech) completely for free without key quota limits.
 * **📋 Auto-Filled Application Forms:** Generates a downloadable, pre-filled application form in JSON structure using the profile data gathered during the chat, sparing the user from manual form filing.
 * **💻 Interactive Demo Simulator:** Serves a side-by-side browser preview dashboard showcasing a simulated WhatsApp interface on the left and a real-time Redis cache JSON visualizer on the right.
-
----
 
 ## 🛠️ System Architecture
 
