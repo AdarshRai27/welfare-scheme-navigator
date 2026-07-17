@@ -99,14 +99,13 @@ async function fetchState() {
             
             // Pretty-print raw Redis JSON
             redisState.textContent = JSON.stringify(session, null, 4);
-
             if (session && session.extracted_profile) {
                 const profile = session.extracted_profile;
-                valName.textContent = profile.name || "Not Extracted";
-                valAadhaar.textContent = profile.aadhaar_number || "Not Extracted";
-                valIncome.textContent = profile.annual_income ? `₹${profile.annual_income}` : "Not Extracted";
-                valLand.textContent = profile.land_size_hectares ? `${profile.land_size_hectares} Hectares` : "Not Extracted";
-                valState.textContent = profile.state || "Not Extracted";
+                updateProfileField(valName, profile.name);
+                updateProfileField(valAadhaar, profile.aadhaar_number);
+                updateProfileField(valIncome, profile.annual_income ? `₹${profile.annual_income}` : null);
+                updateProfileField(valLand, profile.land_size_hectares ? `${profile.land_size_hectares} Hectares` : null);
+                updateProfileField(valState, profile.state);
             } else {
                 resetProfileCard();
             }
@@ -116,12 +115,22 @@ async function fetchState() {
     }
 }
 
+function updateProfileField(element, value) {
+    if (value && value !== "Not Extracted") {
+        element.textContent = value;
+        element.parentElement.classList.add("active");
+    } else {
+        element.textContent = "Not Extracted";
+        element.parentElement.classList.remove("active");
+    }
+}
+
 function resetProfileCard() {
-    valName.textContent = "Not Extracted";
-    valAadhaar.textContent = "Not Extracted";
-    valIncome.textContent = "Not Extracted";
-    valLand.textContent = "Not Extracted";
-    valState.textContent = "Not Extracted";
+    updateProfileField(valName, null);
+    updateProfileField(valAadhaar, null);
+    updateProfileField(valIncome, null);
+    updateProfileField(valLand, null);
+    updateProfileField(valState, null);
 }
 
 // Text Form Submit
