@@ -41,11 +41,15 @@ async def evaluate_rules_node(state: Dict[str, Any]) -> Dict[str, Any]:
         if "land_size_limit" in rules and profile.get("land_size_hectares") is not None:
             if profile["land_size_hectares"] > rules["land_size_limit"]:
                 is_eligible = False
-
         # 4. Evaluate Caste Category Matches
         if "caste_categories" in rules and "caste_category" in profile:
             allowed_castes = [c.lower() for c in rules["caste_categories"]]
             if profile["caste_category"].lower() not in allowed_castes:
+                is_eligible = False
+
+        # 5. Evaluate Gender Match
+        if "gender" in rules and "gender" in profile:
+            if profile["gender"].lower() != rules["gender"].lower():
                 is_eligible = False
 
         if is_eligible:
