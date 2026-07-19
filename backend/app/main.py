@@ -38,19 +38,49 @@ async def startup_event():
     """Seed mock database lists on server startup for preview modes."""
     try:
         import json
-        from app.db.vector_store import VectorStore
-        vs = VectorStore()
-        if not vs._in_memory_schemes:
-            current_file_dir = os.path.dirname(os.path.abspath(__file__))
-            seed_path = os.path.join(current_file_dir, "db", "schemes_seed.json")
-            if os.path.exists(seed_path):
-                with open(seed_path, "r", encoding="utf-8") as f:
-                    schemes = json.load(f)
-                    for scheme in schemes:
-                        await vs.add_scheme(scheme)
-                logger.info(f"[STARTUP] Auto-seeded {len(schemes)} mock schemes from JSON successfully.")
-            else:
-                logger.warning(f"[STARTUP] Seed file not found at: {seed_path}")
+        from app.db.vector_store import VectorStore, db_manager
+        
+        # Ensure database tables are initialized
+        await db_manager.init_db()
+        
+        # Seed logic using active session if database connection is live
+        if not db_manager.is_mock_mode and db_manager.session_factory:
+            from sqlalchemy import select, func
+            from app.db.models import Scheme
+            
+            async with db_manager.session_factory() as session:
+                # Count current rows in database
+                try:
+                    stmt = select(func.count(Scheme.id))
+                    res = await session.execute(stmt)
+                    count = res.scalar() or 0
+                except Exception:
+                    count = 0
+                
+                # Only seed if database table is empty
+                if count == 0:
+                    current_file_dir = os.path.dirname(os.path.abspath(__file__))
+                    seed_path = os.path.join(current_file_dir, "db", "schemes_seed.json")
+                    if os.path.exists(seed_path):
+                        with open(seed_path, "r", encoding="utf-8") as f:
+                            schemes = json.load(f)
+                            # Create a VectorStore bound to this session
+                            vs = VectorStore(session=session)
+                            for scheme in schemes:
+                                await vs.add_scheme(scheme)
+                        logger.info(f"[STARTUP] Auto-seeded {len(schemes)} mock schemes to SQL Database successfully.")
+        else:
+            # Fallback for in-memory / mock mode
+            vs = VectorStore()
+            if not vs._in_memory_schemes:
+                current_file_dir = os.path.dirname(os.path.abspath(__file__))
+                seed_path = os.path.join(current_file_dir, "db", "schemes_seed.json")
+                if os.path.exists(seed_path):
+                    with open(seed_path, "r", encoding="utf-8") as f:
+                        schemes = json.load(f)
+                        for scheme in schemes:
+                            await vs.add_scheme(scheme)
+                    logger.info(f"[STARTUP] Auto-seeded {len(schemes)} mock schemes to in-memory fallback successfully.")
     except Exception as err:
         logger.error(f"[STARTUP] Failed auto-seeding local mock schemes: {err}")
 
