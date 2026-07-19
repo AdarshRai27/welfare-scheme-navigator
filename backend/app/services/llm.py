@@ -109,7 +109,7 @@ async def llm_compose_response(
     profile: Dict[str, Any],
     eligible: List[Dict[str, Any]],
     suggested: List[Dict[str, Any]],
-    language: str,
+    query: str,
 ) -> str:
     """Composes localized response markup using LLM.
 
@@ -117,14 +117,14 @@ async def llm_compose_response(
         profile: Active user demographic context.
         eligible: Matches passing rule constraints.
         suggested: Chained related matches.
-        language: Language preference string.
+        query: Original user query message.
 
     Returns:
         Markdown response.
     """
     if settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("mock"):
         prompt = RESPONSE_COMPOSITION_PROMPT.format(
-            language=language,
+            query=query,
             profile=json.dumps(profile, indent=2),
             eligible=json.dumps(eligible, indent=2),
             suggested=json.dumps(suggested, indent=2),
@@ -147,6 +147,8 @@ async def llm_compose_response(
             "profile": profile,
             "eligible": eligible,
             "suggested": suggested,
-            "language": language,
+            "query": query,
         },
     )
+
+

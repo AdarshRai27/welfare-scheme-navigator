@@ -17,17 +17,19 @@ async def compose_response_node(state: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         State updates containing composed reply_text.
     """
+
+
     profile = state.get("extracted_profile", {})
     eligible = state.get("eligible_schemes", [])
     suggested = state.get("suggested_schemes", [])
-    language = state.get("preferred_language", "hi")
+    query = state.get("user_query", "")
 
     # Generate response via template composition
     reply_text = await llm_compose_response(
         profile=profile,
         eligible=eligible,
         suggested=suggested,
-        language=language,
+        query=query,
     )
 
     logger.info("[AGENT compose_response] Composed markdown message.")

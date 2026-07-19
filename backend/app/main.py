@@ -49,26 +49,24 @@ async def startup_event():
             from app.db.models import Scheme
             
             async with db_manager.session_factory() as session:
-                # Count current rows in database
+                # Truncate and seed the 50 schemes from schemes_seed.json to ensure database is always synced
+                from sqlalchemy import delete
                 try:
-                    stmt = select(func.count(Scheme.id))
-                    res = await session.execute(stmt)
-                    count = res.scalar() or 0
-                except Exception:
-                    count = 0
-                
-                # Only seed if database table is empty
-                if count == 0:
-                    current_file_dir = os.path.dirname(os.path.abspath(__file__))
-                    seed_path = os.path.join(current_file_dir, "db", "schemes_seed.json")
-                    if os.path.exists(seed_path):
-                        with open(seed_path, "r", encoding="utf-8") as f:
-                            schemes = json.load(f)
-                            # Create a VectorStore bound to this session
-                            vs = VectorStore(session=session)
-                            for scheme in schemes:
-                                await vs.add_scheme(scheme)
-                        logger.info(f"[STARTUP] Auto-seeded {len(schemes)} mock schemes to SQL Database successfully.")
+                    await session.execute(delete(Scheme))
+                    await session.commit()
+                except Exception as del_err:
+                    logger.warning(f"[STARTUP] Failed to clear old schemes: {del_err}")
+
+                current_file_dir = os.path.dirname(os.path.abspath(__file__))
+                seed_path = os.path.join(current_file_dir, "db", "schemes_seed.json")
+                if os.path.exists(seed_path):
+                    with open(seed_path, "r", encoding="utf-8") as f:
+                        schemes = json.load(f)
+                        # Create a VectorStore bound to this session
+                        vs = VectorStore(session=session)
+                        for scheme in schemes:
+                            await vs.add_scheme(scheme)
+                    logger.info(f"[STARTUP] Auto-seeded {len(schemes)} fresh mock schemes to SQL Database successfully.")
         else:
             # Fallback for in-memory / mock mode
             vs = VectorStore()

@@ -14,14 +14,28 @@ JSON Output:
 """
 
 RESPONSE_COMPOSITION_PROMPT = """
-You are an empathetic social worker helper. Formulate a reply in language: {language}.
+You are a government welfare advisor counselor.
+Analyze the user's query: "{query}"
+
+Match the language of your response exactly to the language of the user's query:
+- If the query is in English, reply in English.
+- If the query is in Hindi (Devanagari), reply in Hindi (Devanagari).
+- If the query is in Hinglish (Hindi words typed in English script, e.g. "mujhko scheme chahiye"), reply in Hinglish.
+
+Format instructions:
+1. Keep the response short, direct, and compact (WhatsApp format). Do not include verbose headers or long introductions.
+2. For each eligible scheme:
+   - Print the scheme name on its own line (e.g. **Scheme Name**).
+   - Print the application/info link on the very next line (e.g. Link: http://example.com).
+   - Print a brief bulleted list of the eligibility criteria for that scheme on the following lines.
+   - Separate schemes with a blank line.
+
 Profile details: {profile}
-Eligible schemes list: {eligible}
-Suggested forward-chained schemes: {suggested}
-Provide checklist and next steps.
+Eligible schemes: {eligible}
+Suggested related schemes: {suggested}
+
 Response:
 """
-
 
 def simulate_llm_call(prompt_type: str, variables: Dict[str, Any]) -> str:
     """Simulates Llama 3.1 70B output for testing without running Ollama host.
@@ -54,44 +68,60 @@ def simulate_llm_call(prompt_type: str, variables: Dict[str, Any]) -> str:
     elif prompt_type == "compose":
         eligible = variables.get("eligible", [])
         suggested = variables.get("suggested", [])
-        lang = variables.get("language", "hi")
+        query = variables.get("query", "").lower()
+
+        # Detect language based on query content
+        is_hindi = any(2304 <= ord(c) <= 2431 for c in query)
+        is_hinglish = any(w in query for w in ["chahiye", "yojana", "mera", "karna", "krna", "liya", "liye", "kaise", "batao", "ko"])
+        
+        if is_hindi:
+            lang = "hi"
+        elif is_hinglish:
+            lang = "hinglish"
+        else:
+            lang = "en"
 
         if not eligible and not suggested:
             if lang == "hi":
                 return "नमस्ते, आपके विवरण के आधार पर आप अभी किसी योजना के लिए पात्र नहीं हैं।"
+            elif lang == "hinglish":
+                return "Namaste, aapke profile details ke base par aap abhi kisi yojana ke liye eligible nahi hain."
             return "Hello, based on your details, you do not currently qualify for any welfare schemes."
 
         output = []
         if lang == "hi":
-            output.append(
-                "नमस्ते! आपके विवरण के आधार पर आप निम्नलिखित योजनाओं के लिए पात्र हैं:\n"
-            )
+            output.append("नमस्ते! आपके विवरण के आधार पर आप निम्नलिखित योजनाओं के लिए पात्र हैं:\n")
             for s in eligible:
-                output.append(f"✅ **{s['name']}** — {s['description']}")
+                output.append(f"✅ **{s['name']}**")
+                output.append(f"लिंक: {s.get('source_url') or 'https://myscheme.gov.in'}")
+                output.append(f"पात्रता मानदंड: {s.get('eligibility_rules')}\n")
             if suggested:
-                output.append(
-                    "\n💡 **संबद्ध योजनाएं (आप इनके लिए भी पात्र हो सकते हैं):**"
-                )
+                output.append("\n💡 **संबद्ध योजनाएं:**")
                 for s in suggested:
-                    output.append(
-                        f"🔗 **{s['name']}** (पात्रता PM-Kisan से स्वतः निर्धारित)"
-                    )
-            output.append("\n📋 **आवश्यक दस्तावेज:** आधार कार्ड, आय प्रमाण पत्र।")
+                    output.append(f"🔗 **{s['name']}**")
+                    output.append(f"लिंक: {s.get('source_url') or 'https://myscheme.gov.in'}\n")
+        elif lang == "hinglish":
+            output.append("Namaste! Aapke profile details ke base par aap in schemes ke liye eligible hain:\n")
+            for s in eligible:
+                output.append(f"✅ **{s['name']}**")
+                output.append(f"Link: {s.get('source_url') or 'https://myscheme.gov.in'}")
+                output.append(f"Eligibility criteria: {s.get('eligibility_rules')}\n")
+            if suggested:
+                output.append("\n💡 **Related schemes:**")
+                for s in suggested:
+                    output.append(f"🔗 **{s['name']}**")
+                    output.append(f"Link: {s.get('source_url') or 'https://myscheme.gov.in'}\n")
         else:
-            output.append(
-                "Hello! Based on your profile, you qualify for the following schemes:\n"
-            )
+            output.append("Hello! Based on your profile, you qualify for the following schemes:\n")
             for s in eligible:
-                output.append(f"✅ **{s['name']}** — {s['description']}")
+                output.append(f"✅ **{s['name']}**")
+                output.append(f"Link: {s.get('source_url') or 'https://myscheme.gov.in'}")
+                output.append(f"Eligibility criteria: {s.get('eligibility_rules')}\n")
             if suggested:
-                output.append(
-                    "\n💡 **Additional Related Schemes You May Qualify For:**"
-                )
+                output.append("\n💡 **Additional Related Schemes:**")
                 for s in suggested:
-                    output.append(
-                        f"🔗 **{s['name']}** (auto-suggested via PM-Kisan eligibility)"
-                    )
-            output.append("\n📋 **Required Checklist:** Aadhaar Card, Income Certificate.")
+                    output.append(f"🔗 **{s['name']}**")
+                    output.append(f"Link: {s.get('source_url') or 'https://myscheme.gov.in'}\n")
 
         return "\n".join(output)
 

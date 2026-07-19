@@ -48,9 +48,7 @@ async def test_agent_pm_kisan_eligibility_and_forward_chain() -> None:
     assert suggested[1]["name"] == "Pradhan Mantri Fasal Bima Yojana (PMFBY)"
     # Verify output composed
     assert "Kisan Credit Card" in reply
-    assert "Required Checklist" in reply
-
-
+    assert "Eligibility criteria" in reply
 @pytest.mark.asyncio
 async def test_agent_pm_kisan_ineligibility() -> None:
     """Test that exceeding the land size threshold renders the user ineligible."""
@@ -101,9 +99,9 @@ async def test_agent_state_pension_eligibility() -> None:
     }
     await store.add_scheme(up_pension)
 
-    # 1. Test qualifying profile
+    # 1. Test qualifying profile with Hindi query
     res_ok = await run_agent(
-        user_query="pension scheme",
+        user_query="पेंशन योजना",
         extracted_profile={
             "age": 65,
             "annual_income": 30000,
@@ -117,7 +115,7 @@ async def test_agent_state_pension_eligibility() -> None:
 
     # 2. Test state mismatch (user resides in Bihar)
     res_state_err = await run_agent(
-        user_query="pension scheme",
+        user_query="पेंशन योजना",
         extracted_profile={
             "age": 65,
             "annual_income": 30000,
@@ -129,7 +127,7 @@ async def test_agent_state_pension_eligibility() -> None:
 
     # 3. Test age mismatch (user is 45 years old)
     res_age_err = await run_agent(
-        user_query="pension scheme",
+        user_query="पेंशन योजना",
         extracted_profile={
             "age": 45,
             "annual_income": 30000,
@@ -138,3 +136,5 @@ async def test_agent_state_pension_eligibility() -> None:
         language="hi",
     )
     assert len(res_age_err["eligible_schemes"]) == 0
+
+
