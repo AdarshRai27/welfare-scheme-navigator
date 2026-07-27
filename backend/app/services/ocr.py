@@ -48,55 +48,63 @@ class OCRService:
                     "- 'aadhaar_number' (string, formatted XXXX-XXXX-XXXX)\n"
                     "- 'annual_income' (integer, numeric annual income in INR)\n"
                     "- 'land_size_hectares' (float, landholdings size)\n"
-                    "- 'state' (string, state of residence, e.g., 'Uttar Pradesh')"
+                    "- 'state' (string, state of residence, e.g., 'Uttar Pradesh')\n"
+                    "- 'age' (integer, age if present)\n"
+                    "- 'gender' (string, 'Male' or 'Female')"
                 )
 
-                payload = {
-                    "model": "meta-llama/llama-4-scout-17b-16e-instruct",
-                    "messages": [
-                        {
-                            "role": "user",
-                            "content": [
-                                {"type": "text", "text": prompt_text},
-                                {
-                                    "type": "image_url",
-                                    "image_url": {
-                                        "url": f"data:image/jpeg;base64,{base64_img}"
-                                    },
-                                }
-                            ],
-                        }
-                    ],
-                    "temperature": 0.1,
-                    "response_format": {"type": "json_object"},
-                }
+                # Try primary and secondary Groq Vision models
+                vision_models = ["llama-3.2-11b-vision-preview", "llama-3.2-90b-vision-preview"]
+                
+                for vision_model in vision_models:
+                    payload = {
+                        "model": vision_model,
+                        "messages": [
+                            {
+                                "role": "user",
+                                "content": [
+                                    {"type": "text", "text": prompt_text},
+                                    {
+                                        "type": "image_url",
+                                        "image_url": {
+                                            "url": f"data:image/jpeg;base64,{base64_img}"
+                                        },
+                                    }
+                                ],
+                            }
+                        ],
+                        "temperature": 0.1,
+                        "response_format": {"type": "json_object"},
+                    }
 
-                async with httpx.AsyncClient(timeout=30.0) as client:
-                    res = await client.post(url, json=payload, headers=headers)
-                    if res.status_code == 200:
-                        result = res.json()
-                        content = result["choices"][0]["message"]["content"].strip()
-                        extracted_fields = json.loads(content)
-                        logger.info(
-                            f"[GROQ VISION OCR] Successfully parsed fields: {extracted_fields}"
-                        )
+                    async with httpx.AsyncClient(timeout=30.0) as client:
+                        res = await client.post(url, json=payload, headers=headers)
+                        if res.status_code == 200:
+                            result = res.json()
+                            content = result["choices"][0]["message"]["content"].strip()
+                            # Strip markdown code wrappers if present
+                            cleaned_content = content.replace("```json", "").replace("```", "").strip()
+                            extracted_fields = json.loads(cleaned_content)
+                            logger.info(
+                                f"[GROQ VISION OCR] Successfully parsed fields with {vision_model}: {extracted_fields}"
+                            )
 
-                        doc_type = "unknown"
-                        if "aadhaar" in hint:
-                            doc_type = "aadhaar"
-                        elif "income" in hint:
-                            doc_type = "income_certificate"
-                        elif "land" in hint:
-                            doc_type = "land_record"
+                            doc_type = "unknown"
+                            if "aadhaar" in hint or "aadhar" in hint:
+                                doc_type = "aadhaar"
+                            elif "income" in hint:
+                                doc_type = "income_certificate"
+                            elif "land" in hint:
+                                doc_type = "land_record"
 
-                        return {
-                            "document_type": doc_type,
-                            "extracted_fields": extracted_fields,
-                        }
-                    else:
-                        logger.warning(
-                            f"[GROQ VISION OCR] API error (status {res.status_code}): {res.text}"
-                        )
+                            return {
+                                "document_type": doc_type,
+                                "extracted_fields": extracted_fields,
+                            }
+                        else:
+                            logger.warning(
+                                f"[GROQ VISION OCR] API error for {vision_model} (status {res.status_code}): {res.text}"
+                            )
             except Exception as err:
                 logger.warning(
                     f"[GROQ VISION OCR] Connection or parsing error: {err}"

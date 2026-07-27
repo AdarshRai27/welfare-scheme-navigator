@@ -19,6 +19,7 @@ class AgentState(TypedDict):
 
     user_query: str
     preferred_language: str
+    query_intent: str
     extracted_profile: Dict[str, Any]
     candidate_schemes: List[Dict[str, Any]]
     eligible_schemes: List[Dict[str, Any]]
@@ -66,6 +67,7 @@ async def run_agent(
     initial_state: AgentState = {
         "user_query": user_query,
         "preferred_language": language,
+        "query_intent": "SCHEME_QUERY",
         "extracted_profile": extracted_profile or {},
         "candidate_schemes": [],
         "eligible_schemes": [],

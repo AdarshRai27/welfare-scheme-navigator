@@ -17,9 +17,15 @@ async def retrieve_candidates_node(state: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         State updates containing candidate_schemes list.
     """
+    intent = state.get("query_intent", "SCHEME_QUERY")
     query = state.get("user_query", "")
     profile = state.get("extracted_profile", {})
     user_state = profile.get("state")
+
+    # Skip database scheme retrieval if intent is non-scheme (e.g. meta command, greeting, or off-topic)
+    if intent != "SCHEME_QUERY":
+        logger.info(f"[AGENT retrieve_candidates] Skipping retrieval for intent: {intent}")
+        return {"candidate_schemes": []}
 
     store = VectorStore()
     # Fetch schemes ranking by cosine text similarity

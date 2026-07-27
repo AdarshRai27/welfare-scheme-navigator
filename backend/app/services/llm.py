@@ -110,6 +110,8 @@ async def llm_compose_response(
     eligible: List[Dict[str, Any]],
     suggested: List[Dict[str, Any]],
     query: str,
+    intent: str = "SCHEME_QUERY",
+    language: str = "hi",
 ) -> str:
     """Composes localized response markup using LLM.
 
@@ -118,6 +120,8 @@ async def llm_compose_response(
         eligible: Matches passing rule constraints.
         suggested: Chained related matches.
         query: Original user query message.
+        intent: Classified user query intent.
+        language: Preferred language code.
 
     Returns:
         Markdown response.
@@ -125,6 +129,8 @@ async def llm_compose_response(
     if settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("mock"):
         prompt = RESPONSE_COMPOSITION_PROMPT.format(
             query=query,
+            intent=intent,
+            language=language,
             profile=json.dumps(profile, indent=2),
             eligible=json.dumps(eligible, indent=2),
             suggested=json.dumps(suggested, indent=2),
@@ -132,9 +138,9 @@ async def llm_compose_response(
         response_text = await run_llm_completion(
             prompt=prompt,
             system_message=(
-                "You are a government welfare schemes counselor. Outline eligibility, "
-                "list checklists, and point them to pre-filled applications. Keep replies "
-                "clear, empathetic, and formatted in markdown."
+                "You are Sarkari Sahayak, a government welfare schemes counselor. Outline eligibility, "
+                "list checklists, and point users to pre-filled applications. Keep replies "
+                "clear, empathetic, concise (WhatsApp style), and strictly bounded to welfare schemes domain."
             ),
         )
         if response_text:
@@ -148,6 +154,8 @@ async def llm_compose_response(
             "eligible": eligible,
             "suggested": suggested,
             "query": query,
+            "intent": intent,
+            "language": language,
         },
     )
 

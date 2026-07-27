@@ -23,6 +23,8 @@ async def compose_response_node(state: Dict[str, Any]) -> Dict[str, Any]:
     eligible = state.get("eligible_schemes", [])
     suggested = state.get("suggested_schemes", [])
     query = state.get("user_query", "")
+    intent = state.get("query_intent", "SCHEME_QUERY")
+    language = state.get("preferred_language", "hi")
 
     # Generate response via template composition
     reply_text = await llm_compose_response(
@@ -30,6 +32,8 @@ async def compose_response_node(state: Dict[str, Any]) -> Dict[str, Any]:
         eligible=eligible,
         suggested=suggested,
         query=query,
+        intent=intent,
+        language=language,
     )
 
     logger.info("[AGENT compose_response] Composed markdown message.")
