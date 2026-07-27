@@ -29,6 +29,22 @@ static_dir = os.path.join(os.path.dirname(current_file_dir), "static")
 os.makedirs(static_dir, exist_ok=True)
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
+from fastapi.responses import FileResponse
+
+@app.get("/")
+async def root():
+    """Serve the production-grade landing page preview."""
+    preview_file = os.path.join(static_dir, "preview.html")
+    if os.path.exists(preview_file):
+        return FileResponse(preview_file)
+    return FileResponse(os.path.join(static_dir, "index.html"))
+
+@app.get("/preview")
+async def get_preview():
+    """Serve the production-grade landing page preview."""
+    preview_file = os.path.join(static_dir, "preview.html")
+    return FileResponse(preview_file)
+
 # Include webhook route paths
 app.include_router(webhook_router)
 
