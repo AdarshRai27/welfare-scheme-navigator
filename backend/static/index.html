@@ -347,6 +347,12 @@
                             <button id="btnIncome" onclick="triggerFile('fileIncome')" class="px-3 py-1.5 rounded-lg bg-white hover:bg-cream-50 text-espresso-800 text-xs font-semibold border border-cream-300 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
                                 <i class="fa-solid fa-file-invoice text-warm-sage"></i> <span data-i18n="action_income">Income Cert</span>
                             </button>
+                            <button id="btnDiditScan" onclick="triggerDiditScan()" class="px-3 py-1.5 rounded-lg bg-white hover:bg-cream-50 text-espresso-800 text-xs font-semibold border border-cream-300 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
+                                <i class="fa-solid fa-address-card text-indigo-600"></i> <span>Didit ID Scan</span>
+                            </button>
+                            <button id="btnDiditOAuth" onclick="triggerDiditOAuth()" class="px-3 py-1.5 rounded-lg bg-white hover:bg-cream-50 text-espresso-800 text-xs font-semibold border border-cream-300 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
+                                <i class="fa-solid fa-bolt text-amber-500"></i> <span>⚡ 1-Click Didit (No Image)</span>
+                            </button>
 
                             <input type="file" id="fileAudio" accept="audio/*,video/*" class="hidden" onchange="handleFileUpload(this, 'audio')">
                             <input type="file" id="fileAadhaar" accept="image/*" class="hidden" onchange="handleFileUpload(this, 'aadhaar')">

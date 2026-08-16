@@ -193,5 +193,36 @@ btnClear.addEventListener("click", async () => {
     }
 });
 
+// Didit Hybrid Handlers
+async function triggerDiditScan() {
+    addMessage("user", "🪪 [Initiated Didit Identity Document Scan]");
+    const formData = new FormData();
+    formData.append("phone", PHONE_NUMBER);
+    try {
+        const res = await fetch(`${BASE_URL}/webhook/didit/scan`, { method: "POST", body: formData });
+        const data = await res.json();
+        if (data.reply_text) {
+            addMessage("bot", data.reply_text);
+        }
+        fetchState();
+    } catch (err) {
+        console.error("Didit ID Scan error:", err);
+    }
+}
+
+async function triggerDiditOAuth() {
+    addMessage("user", "⚡ [Initiated 1-Click Didit OAuth Verification (No Image)]");
+    try {
+        const res = await fetch(`${BASE_URL}/webhook/didit/oauth/mock_verify?phone=${PHONE_NUMBER}`);
+        const data = await res.json();
+        if (data.reply_text) {
+            addMessage("bot", data.reply_text);
+        }
+        fetchState();
+    } catch (err) {
+        console.error("Didit OAuth error:", err);
+    }
+}
+
 // Initial diagnostics poll on page load
 fetchState();

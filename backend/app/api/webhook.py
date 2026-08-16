@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.core.session import SessionManager
 from app.services.bhashini import BhashiniService
 from app.services.ocr import OCRService
+from app.services.didit import DiditService
 from app.services.pdf_filler import FormFillerService
 from app.services.whatsapp import WhatsAppService
 
@@ -31,6 +32,7 @@ bhashini_service = BhashiniService(
     pipeline_id=settings.BHASHINI_PIPELINE_ID,
 )
 ocr_service = OCRService()
+didit_service = DiditService()
 form_filler_service = FormFillerService()
 
 
@@ -368,6 +370,86 @@ async def handle_web_message(
     return {
         "status": "success",
         "reply_text": reply_text,
+        "session": session,
+    }
+
+
+@router.post("/didit/scan")
+async def handle_didit_id_scan(
+    phone: str = Form("919999999999"),
+    file: Optional[UploadFile] = File(None),
+) -> Dict[str, Any]:
+    """Processes ID document scanning via Didit Protocol OCR service."""
+    session = await session_manager.get_session(phone)
+    if not session:
+        session = {"whatsapp_id": phone, "preferred_language": "hi", "extracted_profile": {}}
+
+    file_bytes = b"MOCK_DIDIT_AADHAAR_BYTES"
+    filename_hint = "aadhaar"
+    if file:
+        file_bytes = await file.read()
+        filename_hint = file.filename or "aadhaar"
+
+    # Run Didit Document Scan
+    didit_res = await didit_service.extract_identity_document(file_bytes, filename_hint)
+    extracted_fields = didit_res.get("extracted_fields", {})
+
+    # Merge into Redis user profile session
+    session.setdefault("extracted_profile", {}).update(extracted_fields)
+    await session_manager.save_session(phone, session)
+
+    # Run LangGraph reasoning workflow
+    trigger_query = "Extracted didit_aadhaar parameters"
+    result = await run_agent(trigger_query, session["extracted_profile"])
+
+    session["eligible_schemes"] = result.get("eligible_schemes", [])
+    session["suggested_schemes"] = result.get("suggested_schemes", [])
+    await session_manager.save_session(phone, session)
+
+    return {
+        "status": "success",
+        "provider": didit_res.get("provider", "didit"),
+        "reply_text": f"🪪 **Didit Verified Identity:**\n{result.get('reply_text', '')}",
+        "session": session,
+    }
+
+
+@router.post("/didit/oauth/session")
+async def handle_didit_oauth_session(
+    phone: str = Form("919999999999"),
+) -> Dict[str, Any]:
+    """Generates 1-click Didit OAuth2 verification session URL (Image-free flow)."""
+    callback_url = f"https://welfare-scheme-navigator.onrender.com/webhook/didit/oauth/callback?phone={phone}"
+    session_info = await didit_service.create_oauth_session(phone, callback_url)
+    return {
+        "status": "success",
+        "flow": "oauth2_image_free",
+        "session_url": session_info.get("url"),
+        "session_id": session_info.get("session_id"),
+    }
+
+
+@router.get("/didit/oauth/mock_verify")
+async def handle_didit_mock_oauth_verify(phone: str = Query("919999999999")) -> Dict[str, Any]:
+    """Mock 1-click Didit OAuth token callback that updates Redis profile without images."""
+    session = await session_manager.get_session(phone)
+    if not session:
+        session = {"whatsapp_id": phone, "preferred_language": "hi", "extracted_profile": {}}
+
+    claims = await didit_service.verify_oauth_claims(f"didit_token_{phone}")
+    session.setdefault("extracted_profile", {}).update(claims)
+    await session_manager.save_session(phone, session)
+
+    # Run agent on verified profile
+    result = await run_agent("Extracted didit_oauth parameters", session["extracted_profile"])
+    session["eligible_schemes"] = result.get("eligible_schemes", [])
+    session["suggested_schemes"] = result.get("suggested_schemes", [])
+    await session_manager.save_session(phone, session)
+
+    return {
+        "status": "success",
+        "flow": "didit_oauth2_verified",
+        "reply_text": f"⚡ **1-Click Didit Verified Profile:**\n{result.get('reply_text', '')}",
         "session": session,
     }
 
