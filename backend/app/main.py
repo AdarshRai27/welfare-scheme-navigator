@@ -98,12 +98,13 @@ async def startup_event():
     except Exception as err:
         logger.error(f"[STARTUP] Failed auto-seeding local mock schemes: {err}")
 
+@app.get("/health")
 @app.get("/internal/health")
 async def health_check() -> Dict[str, str]:
-    """Endpoint for basic container health checks.
+    """Endpoint for basic container health checks and UptimeRobot keep-alive pings.
 
     Returns:
         Dictionary containing status and server indicator.
     """
     logger.debug("Health check requested.")
-    return {"status": "healthy", "service": "orchestrator"}
+    return {"status": "healthy", "service": "Sarkari Sahayak", "uptime_keeper": "active"}

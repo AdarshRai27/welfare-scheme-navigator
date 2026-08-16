@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     BHASHINI_PIPELINE_ID: str = "mock_pipeline"
     GROQ_API_KEY: Optional[str] = None
     OPENAI_API_KEY: Optional[str] = None
+    DIDIT_API_KEY: Optional[str] = None
+    DIDIT_CLIENT_ID: Optional[str] = None
 
     # Configuration source preference (.env file support)
     model_config = SettingsConfigDict(
