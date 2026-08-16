@@ -1,4 +1,11 @@
-[
+"""Script to generate an expanded, production-grade dataset of Central & State Government Welfare Schemes."""
+
+import json
+import os
+
+schemes = [
+    # --- CENTRAL GOVERNMENT SCHEMES ---
+    # Agriculture & Farmers Welfare
     {
         "name": "PM-Kisan Samman Nidhi",
         "issuing_body": "Ministry of Agriculture and Farmers Welfare",
@@ -7,7 +14,7 @@
         "description": "Financial support of ₹6,000 per year paid in 3 equal installments of ₹2,000 directly to landowning farmers across India.",
         "eligibility_rules": {
             "min_age": 18,
-            "requires_land": true,
+            "requires_land": True,
             "land_size_limit": 2.0
         },
         "source_url": "https://pmkisan.gov.in"
@@ -21,7 +28,7 @@
         "eligibility_rules": {
             "min_age": 18,
             "max_age": 75,
-            "requires_land": false
+            "requires_land": False
         },
         "source_url": "https://myscheme.gov.in/schemes/kcc"
     },
@@ -33,7 +40,7 @@
         "description": "Comprehensive crop insurance scheme protecting farmers against crop loss/damage due to natural calamities, pests, and diseases.",
         "eligibility_rules": {
             "min_age": 18,
-            "requires_land": false
+            "requires_land": False
         },
         "source_url": "https://pmfby.gov.in"
     },
@@ -58,7 +65,7 @@
         "description": "Promotes organic farming among farmers with financial assistance of ₹50,000 per hectare over 3 years for organic inputs and certification.",
         "eligibility_rules": {
             "min_age": 18,
-            "requires_land": true
+            "requires_land": True
         },
         "source_url": "https://pgsindia-ncof.dac.gov.in"
     },
@@ -73,6 +80,8 @@
         },
         "source_url": "https://agriinfra.dac.gov.in"
     },
+
+    # Business Loans & MSME Support
     {
         "name": "PM Mudra Yojana - Shishu Loan",
         "issuing_body": "Ministry of Finance",
@@ -153,6 +162,8 @@
         },
         "source_url": "https://www.standupmitra.in"
     },
+
+    # Health & Medical Care
     {
         "name": "Ayushman Bharat (PM-JAY)",
         "issuing_body": "National Health Authority",
@@ -173,6 +184,8 @@
         "eligibility_rules": {},
         "source_url": "https://janaushadhi.gov.in"
     },
+
+    # Social Security & Pensions
     {
         "name": "Atal Pension Yojana (APY)",
         "issuing_body": "PFRDA / Ministry of Finance",
@@ -222,6 +235,8 @@
         },
         "source_url": "https://www.jansuraksha.gov.in"
     },
+
+    # Women & Child Welfare
     {
         "name": "Sukanya Samriddhi Yojana (SSY)",
         "issuing_body": "Ministry of Women and Child Development",
@@ -247,6 +262,8 @@
         },
         "source_url": "https://pmmvy.wcd.gov.in"
     },
+
+    # Housing & Infrastructure
     {
         "name": "PM Awas Yojana - Gramin (PMAY-G)",
         "issuing_body": "Ministry of Rural Development",
@@ -269,6 +286,8 @@
         },
         "source_url": "https://pmaymis.gov.in"
     },
+
+    # Education & Skill Development
     {
         "name": "PM Vidyalaxmi Scheme",
         "issuing_body": "Ministry of Education",
@@ -293,6 +312,8 @@
         },
         "source_url": "https://www.pmkvyofficial.org"
     },
+
+    # Employment & Labour
     {
         "name": "MGNREGA (Rural Employment Guarantee)",
         "issuing_body": "Ministry of Rural Development",
@@ -316,6 +337,9 @@
         },
         "source_url": "https://eshram.gov.in"
     },
+
+    # --- STATE SPECIFIC WELFARE SCHEMES ---
+    # UTTAR PRADESH
     {
         "name": "UP Senior Pension Scheme",
         "issuing_body": "Social Welfare Department",
@@ -392,6 +416,8 @@
         },
         "source_url": "https://abhyuday.up.gov.in"
     },
+
+    # BIHAR
     {
         "name": "Bihar Mukhyamantri Kanya Utthan Yojana",
         "issuing_body": "Education Department, Bihar",
@@ -429,6 +455,8 @@
         },
         "source_url": "https://udyami.bihar.gov.in"
     },
+
+    # MAHARASHTRA
     {
         "name": "Mukhyamantri Majhi Ladki Bahin Yojana",
         "issuing_body": "Women & Child Development Dept, Maharashtra",
@@ -454,6 +482,8 @@
         },
         "source_url": "https://www.jeevandayee.gov.in"
     },
+
+    # RAJASTHAN
     {
         "name": "Mukhyamantri Chiranjeevi Swasthya Bima Yojana",
         "issuing_body": "Medical & Health Department, Rajasthan",
@@ -476,6 +506,8 @@
         },
         "source_url": "https://sjp.rajasthan.gov.in"
     },
+
+    # MADHYA PRADESH
     {
         "name": "Mukhyamantri Ladli Behna Yojana",
         "issuing_body": "Women & Child Development Dept, MP",
@@ -502,6 +534,8 @@
         },
         "source_url": "https://mmsky.mp.gov.in"
     },
+
+    # TAMIL NADU
     {
         "name": "Kalaignar Magalir Urimai Thogai Scheme",
         "issuing_body": "Special Programme Implementation Dept, Tamil Nadu",
@@ -515,6 +549,8 @@
         },
         "source_url": "https://kmut.tn.gov.in"
     },
+
+    # WEST BENGAL
     {
         "name": "Lakshmir Bhandar Scheme",
         "issuing_body": "Women & Child Development Dept, West Bengal",
@@ -528,6 +564,8 @@
         },
         "source_url": "https://socialsecurity.wb.gov.in"
     },
+
+    # KARNATAKA
     {
         "name": "Gruha Lakshmi Scheme",
         "issuing_body": "Women & Child Development Dept, Karnataka",
@@ -541,3 +579,9 @@
         "source_url": "https://sevasindhu.karnataka.gov.in"
     }
 ]
+
+file_path = "backend/app/db/schemes_seed.json"
+with open(file_path, "w", encoding="utf-8") as f:
+    json.dump(schemes, f, indent=4, ensure_ascii=False)
+
+print(f"Successfully generated expanded scheme database with {len(schemes)} schemes!")
