@@ -11,14 +11,12 @@ const redisState = document.getElementById("redisState");
 
 // Button Triggers
 const btnAudio = document.getElementById("btnAudio");
-const btnAadhaar = document.getElementById("btnAadhaar");
-const btnIncome = document.getElementById("btnIncome");
+const btnDiditScan = document.getElementById("btnDiditScan");
+const btnDiditOAuth = document.getElementById("btnDiditOAuth");
 const btnClear = document.getElementById("btnClear");
 
 // Hidden File Inputs
 const fileAudio = document.getElementById("fileAudio");
-const fileAadhaar = document.getElementById("fileAadhaar");
-const fileIncome = document.getElementById("fileIncome");
 
 // Profile visualizer DOM
 const valName = document.getElementById("valName");
@@ -145,34 +143,16 @@ inputForm.addEventListener("submit", (e) => {
 });
 
 // Trigger hidden file inputs on click
-btnAudio.addEventListener("click", () => fileAudio.click());
-btnAadhaar.addEventListener("click", () => fileAadhaar.click());
-btnIncome.addEventListener("click", () => fileIncome.click());
-
-// File input change handlers
-fileAudio.addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        addMessage("user", `🎤 [Sent Voice Note: ${file.name}]`);
-        sendWebMessage("audio", null, file);
-    }
-});
-
-fileAadhaar.addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        addMessage("user", `🪪 [Uploaded Aadhaar: ${file.name}]`);
-        sendWebMessage("aadhaar", null, file);
-    }
-});
-
-fileIncome.addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        addMessage("user", `📄 [Uploaded Income Certificate: ${file.name}]`);
-        sendWebMessage("income", null, file);
-    }
-});
+if (btnAudio && fileAudio) {
+    btnAudio.addEventListener("click", () => fileAudio.click());
+    fileAudio.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            addMessage("user", `🎤 [Sent Voice Note: ${file.name}]`);
+            sendWebMessage("audio", null, file);
+        }
+    });
+}
 
 // Clear session diag trigger
 btnClear.addEventListener("click", async () => {
