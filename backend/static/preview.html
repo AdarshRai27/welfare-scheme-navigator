@@ -877,6 +877,36 @@
             }, 600);
         }
 
+        async function triggerDiditScan() {
+            appendUserMessage("🪪 [Initiated Didit Identity Document Scan]");
+            const formData = new FormData();
+            formData.append("phone", PHONE_NUMBER);
+            try {
+                const res = await fetch(`${BASE_URL}/webhook/didit/scan`, { method: "POST", body: formData });
+                const data = await res.json();
+                if (data && data.reply_text) {
+                    appendBotMessage(data.reply_text);
+                }
+                fetchSessionState();
+            } catch (err) {
+                console.error("Didit Scan error:", err);
+            }
+        }
+
+        async function triggerDiditOAuth() {
+            appendUserMessage("⚡ [Initiated 1-Click Didit OAuth Verification (No Image)]");
+            try {
+                const res = await fetch(`${BASE_URL}/webhook/didit/oauth/mock_verify?phone=${PHONE_NUMBER}`);
+                const data = await res.json();
+                if (data && data.reply_text) {
+                    appendBotMessage(data.reply_text);
+                }
+                fetchSessionState();
+            } catch (err) {
+                console.error("Didit OAuth error:", err);
+            }
+        }
+
         // Initialize language preference on load
         const savedLang = localStorage.getItem('languagePreference') || 'en';
         switchLanguage(savedLang);
