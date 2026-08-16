@@ -10,6 +10,12 @@ __pycache__/
 # Local environment configuration
 .env
 .env.local
+backend/.env
+
+# Zip and archive files
+*.zip
+*.tar.gz
+*.rar
 
 # Docker volume mounts / database folders
 postgres_data/
