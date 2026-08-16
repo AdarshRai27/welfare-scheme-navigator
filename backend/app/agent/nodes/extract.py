@@ -22,7 +22,7 @@ async def extract_profile_node(state: Dict[str, Any]) -> Dict[str, Any]:
     profile = state.get("extracted_profile", {}).copy()
     current_lang = state.get("preferred_language", "hi")
 
-    # If query is a system notification for OCR/Speech extraction (e.g. "Extracted income_certificate parameters...")
+    # If query is a system notification for OCR/Speech extraction (e.g. "Extracted parameters...")
     if query and query.startswith("Extracted"):
         try:
             import ast
@@ -37,7 +37,7 @@ async def extract_profile_node(state: Dict[str, Any]) -> Dict[str, Any]:
                 for k, v in parsed.items():
                     if v is not None:
                         profile[k] = v
-            logger.info(f"[AGENT extract_profile] Merged system extracted payload: {profile}")
+            logger.info(f"[AGENT extract_profile] System extracted profile state: {profile}")
             return {
                 "extracted_profile": profile,
                 "query_intent": "SCHEME_QUERY",

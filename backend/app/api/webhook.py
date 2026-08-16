@@ -394,12 +394,27 @@ async def handle_didit_id_scan(
     didit_res = await didit_service.extract_identity_document(file_bytes, filename_hint)
     extracted_fields = didit_res.get("extracted_fields", {})
 
+    # Check if OCR / Didit failed to extract meaningful fields
+    valid_fields = {k: v for k, v in extracted_fields.items() if v and v != "Not Extracted"}
+    if not valid_fields:
+        err_msg = (
+            "⚠️ **दस्तावेज़ पढ़ने में असमर्थ:**\nआपके दस्तावेज़ की फोटो से विवरण स्पष्ट रूप से नहीं पढ़े जा सके। कृपया सुनिश्चित करें कि फोटो साफ़, धुंधली रहित और अच्छी रोशनी में ली गई हो, फिर पुनः प्रयास करें।"
+            if session.get("preferred_language") == "hi"
+            else "⚠️ **Document Scan Unreadable:**\nCould not clearly read details from your document photo. Please ensure the photo is well-lit, sharp, and not blurry, then try again."
+        )
+        return {
+            "status": "unreadable",
+            "provider": didit_res.get("provider", "didit"),
+            "reply_text": err_msg,
+            "session": session,
+        }
+
     # Merge into Redis user profile session
-    session.setdefault("extracted_profile", {}).update(extracted_fields)
+    session.setdefault("extracted_profile", {}).update(valid_fields)
     await session_manager.save_session(phone, session)
 
-    # Run LangGraph reasoning workflow
-    trigger_query = "Extracted didit_aadhaar parameters"
+    # Run LangGraph reasoning workflow with embedded JSON dictionary
+    trigger_query = f"Extracted didit_aadhaar parameters: {json.dumps(valid_fields)}"
     result = await run_agent(trigger_query, session["extracted_profile"])
 
     session["eligible_schemes"] = result.get("eligible_schemes", [])
@@ -440,8 +455,9 @@ async def handle_didit_mock_oauth_verify(phone: str = Query("919999999999")) -> 
     session.setdefault("extracted_profile", {}).update(claims)
     await session_manager.save_session(phone, session)
 
-    # Run agent on verified profile
-    result = await run_agent("Extracted didit_oauth parameters", session["extracted_profile"])
+    # Run agent on verified profile with embedded JSON claims
+    trigger_query = f"Extracted didit_oauth parameters: {json.dumps(claims)}"
+    result = await run_agent(trigger_query, session["extracted_profile"])
     session["eligible_schemes"] = result.get("eligible_schemes", [])
     session["suggested_schemes"] = result.get("suggested_schemes", [])
     await session_manager.save_session(phone, session)

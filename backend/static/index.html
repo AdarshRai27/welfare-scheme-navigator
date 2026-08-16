@@ -341,12 +341,6 @@
                             <button id="btnAudio" onclick="triggerFile('fileAudio')" class="px-3 py-1.5 rounded-lg bg-white hover:bg-cream-50 text-espresso-800 text-xs font-semibold border border-cream-300 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
                                 <i class="fa-solid fa-microphone text-warm-terracotta"></i> <span data-i18n="action_voice">Voice Note</span>
                             </button>
-                            <button id="btnAadhaar" onclick="triggerFile('fileAadhaar')" class="px-3 py-1.5 rounded-lg bg-white hover:bg-cream-50 text-espresso-800 text-xs font-semibold border border-cream-300 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
-                                <i class="fa-solid fa-id-card text-espresso-700"></i> <span data-i18n="action_aadhaar">Aadhaar Scan</span>
-                            </button>
-                            <button id="btnIncome" onclick="triggerFile('fileIncome')" class="px-3 py-1.5 rounded-lg bg-white hover:bg-cream-50 text-espresso-800 text-xs font-semibold border border-cream-300 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
-                                <i class="fa-solid fa-file-invoice text-warm-sage"></i> <span data-i18n="action_income">Income Cert</span>
-                            </button>
                             <button id="btnDiditScan" onclick="triggerDiditScan()" class="px-3 py-1.5 rounded-lg bg-white hover:bg-cream-50 text-espresso-800 text-xs font-semibold border border-cream-300 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
                                 <i class="fa-solid fa-address-card text-indigo-600"></i> <span>Didit ID Scan</span>
                             </button>
@@ -355,8 +349,6 @@
                             </button>
 
                             <input type="file" id="fileAudio" accept="audio/*,video/*" class="hidden" onchange="handleFileUpload(this, 'audio')">
-                            <input type="file" id="fileAadhaar" accept="image/*" class="hidden" onchange="handleFileUpload(this, 'aadhaar')">
-                            <input type="file" id="fileIncome" accept="image/*" class="hidden" onchange="handleFileUpload(this, 'income')">
                         </div>
 
                         <form id="inputForm" onsubmit="handleSend(event)" class="flex items-center gap-2">
