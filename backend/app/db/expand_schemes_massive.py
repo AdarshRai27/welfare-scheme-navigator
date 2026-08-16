@@ -1,4 +1,13 @@
-[
+"""Massive Scheme Database Expansion Script for Central & All State Welfare Schemes."""
+
+import json
+
+schemes = [
+    # ==========================================
+    # 🏛️ CENTRAL GOVERNMENT WELFARE SCHEMES
+    # ==========================================
+
+    # --- Agriculture & Farmers Welfare ---
     {
         "name": "PM-Kisan Samman Nidhi",
         "issuing_body": "Ministry of Agriculture and Farmers Welfare",
@@ -7,7 +16,7 @@
         "description": "Direct income support of ₹6,000 per year paid in 3 equal installments of ₹2,000 to all landholding farmer families across India.",
         "eligibility_rules": {
             "min_age": 18,
-            "requires_land": true,
+            "requires_land": True,
             "land_size_limit": 2.0
         },
         "source_url": "https://pmkisan.gov.in"
@@ -21,7 +30,7 @@
         "eligibility_rules": {
             "min_age": 18,
             "max_age": 75,
-            "requires_land": false
+            "requires_land": False
         },
         "source_url": "https://myscheme.gov.in/schemes/kcc"
     },
@@ -33,7 +42,7 @@
         "description": "Comprehensive crop insurance scheme protecting farmers against crop loss/damage due to natural calamities, pests, and unseasonal weather.",
         "eligibility_rules": {
             "min_age": 18,
-            "requires_land": false
+            "requires_land": False
         },
         "source_url": "https://pmfby.gov.in"
     },
@@ -58,7 +67,7 @@
         "description": "Promotes organic farming among farmers with financial assistance of ₹50,000 per hectare over 3 years for organic inputs, soil health, and certification.",
         "eligibility_rules": {
             "min_age": 18,
-            "requires_land": true
+            "requires_land": True
         },
         "source_url": "https://pgsindia-ncof.dac.gov.in"
     },
@@ -81,7 +90,7 @@
         "description": "Financial subsidy up to 55% for installing drip irrigation, micro-sprinklers, and farm ponds to maximize water use efficiency ('Per Drop More Crop').",
         "eligibility_rules": {
             "min_age": 18,
-            "requires_land": true
+            "requires_land": True
         },
         "source_url": "https://pmksy.gov.in"
     },
@@ -93,10 +102,12 @@
         "description": "Provides 40% to 80% subsidy for purchasing tractors, power tillers, rotavators, and harvesters for small and marginal farmers.",
         "eligibility_rules": {
             "min_age": 18,
-            "requires_land": true
+            "requires_land": True
         },
         "source_url": "https://agrimachinery.nic.in"
     },
+
+    # --- MSME & Business Loans ---
     {
         "name": "PM Mudra Yojana - Shishu Loan",
         "issuing_body": "Ministry of Finance",
@@ -188,6 +199,8 @@
         },
         "source_url": "https://pmfme.mofpi.gov.in"
     },
+
+    # --- Health & Medical Care ---
     {
         "name": "Ayushman Bharat (PM-JAY)",
         "issuing_body": "National Health Authority",
@@ -228,6 +241,8 @@
         },
         "source_url": "https://pmsma.nhp.gov.in"
     },
+
+    # --- Social Security & Pensions ---
     {
         "name": "Atal Pension Yojana (APY)",
         "issuing_body": "PFRDA / Ministry of Finance",
@@ -289,6 +304,8 @@
         },
         "source_url": "https://nsap.nic.in"
     },
+
+    # --- Women & Child Welfare ---
     {
         "name": "Sukanya Samriddhi Yojana (SSY)",
         "issuing_body": "Ministry of Women and Child Development",
@@ -327,6 +344,8 @@
         },
         "source_url": "https://www.pmuy.gov.in"
     },
+
+    # --- Housing & Infrastructure ---
     {
         "name": "PM Awas Yojana - Gramin (PMAY-G)",
         "issuing_body": "Ministry of Rural Development",
@@ -358,6 +377,8 @@
         "eligibility_rules": {},
         "source_url": "https://ejalshakti.gov.in"
     },
+
+    # --- Education & Skill Development ---
     {
         "name": "PM Vidyalaxmi Scheme",
         "issuing_body": "Ministry of Education",
@@ -408,6 +429,8 @@
         },
         "source_url": "https://scholarships.gov.in"
     },
+
+    # --- Labour & Employment ---
     {
         "name": "MGNREGA (Rural Employment Guarantee)",
         "issuing_body": "Ministry of Rural Development",
@@ -431,6 +454,12 @@
         },
         "source_url": "https://eshram.gov.in"
     },
+
+    # ==========================================
+    # 🗺️ STATE GOVERNMENT WELFARE SCHEMES
+    # ==========================================
+
+    # --- UTTAR PRADESH ---
     {
         "name": "UP Senior Pension Scheme",
         "issuing_body": "Social Welfare Department, UP",
@@ -530,6 +559,8 @@
         },
         "source_url": "https://animalhusbandry.up.gov.in"
     },
+
+    # --- BIHAR ---
     {
         "name": "Bihar Mukhyamantri Kanya Utthan Yojana",
         "issuing_body": "Education Department, Bihar",
@@ -578,6 +609,8 @@
         },
         "source_url": "https://elabharthi.bih.nic.in"
     },
+
+    # --- MAHARASHTRA ---
     {
         "name": "Mukhyamantri Majhi Ladki Bahin Yojana",
         "issuing_body": "Women & Child Development Dept, Maharashtra",
@@ -616,6 +649,8 @@
         },
         "source_url": "https://mahagov.in"
     },
+
+    # --- RAJASTHAN ---
     {
         "name": "Mukhyamantri Chiranjeevi Swasthya Bima Yojana",
         "issuing_body": "Medical & Health Department, Rajasthan",
@@ -647,6 +682,8 @@
         "eligibility_rules": {},
         "source_url": "https://indirarasoi.rajasthan.gov.in"
     },
+
+    # --- MADHYA PRADESH ---
     {
         "name": "Mukhyamantri Ladli Behna Yojana",
         "issuing_body": "Women & Child Development Dept, MP",
@@ -686,6 +723,8 @@
         },
         "source_url": "https://ladlilaxmi.mp.gov.in"
     },
+
+    # --- TAMIL NADU ---
     {
         "name": "Kalaignar Magalir Urimai Thogai Scheme",
         "issuing_body": "Special Programme Implementation Dept, Tamil Nadu",
@@ -712,6 +751,8 @@
         },
         "source_url": "https://penkalvi.tn.gov.in"
     },
+
+    # --- WEST BENGAL ---
     {
         "name": "Lakshmir Bhandar Scheme",
         "issuing_body": "Women & Child Development Dept, West Bengal",
@@ -750,6 +791,8 @@
         },
         "source_url": "https://wbscc.wb.gov.in"
     },
+
+    # --- KARNATAKA ---
     {
         "name": "Gruha Lakshmi Scheme",
         "issuing_body": "Women & Child Development Dept, Karnataka",
@@ -774,6 +817,8 @@
         },
         "source_url": "https://sevasindhu.karnataka.gov.in"
     },
+
+    # --- TELANGANA ---
     {
         "name": "Telangana Rythu Bandhu Scheme",
         "issuing_body": "Agriculture Department, Telangana",
@@ -782,10 +827,12 @@
         "description": "Financial investment support of ₹10,000 per acre per year for agriculture and horticulture crops directly to farmers in Telangana.",
         "eligibility_rules": {
             "min_age": 18,
-            "requires_land": true
+            "requires_land": True
         },
         "source_url": "https://rythubandhu.telangana.gov.in"
     },
+
+    # --- ANDHRA PRADESH ---
     {
         "name": "YSR Rythu Bharosa Scheme",
         "issuing_body": "Agriculture Department, Andhra Pradesh",
@@ -794,8 +841,14 @@
         "description": "Financial assistance of ₹13,500 per year provided to farmer families including tenant farmers in Andhra Pradesh.",
         "eligibility_rules": {
             "min_age": 18,
-            "requires_land": false
+            "requires_land": False
         },
         "source_url": "https://ysrrythubharosa.ap.gov.in"
     }
 ]
+
+file_path = "backend/app/db/schemes_seed.json"
+with open(file_path, "w", encoding="utf-8") as f:
+    json.dump(schemes, f, indent=4, ensure_ascii=False)
+
+print(f"Successfully compiled massive scheme database with {len(schemes)} official government schemes!")
