@@ -341,7 +341,7 @@
                             <button id="btnAudio" onclick="triggerFile('fileAudio')" class="px-3 py-1.5 rounded-lg bg-white hover:bg-cream-50 text-espresso-800 text-xs font-semibold border border-cream-300 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
                                 <i class="fa-solid fa-microphone text-warm-terracotta"></i> <span data-i18n="action_voice">Voice Note</span>
                             </button>
-                            <button id="btnDiditScan" onclick="triggerDiditScan()" class="px-3 py-1.5 rounded-lg bg-white hover:bg-cream-50 text-espresso-800 text-xs font-semibold border border-cream-300 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
+                            <button id="btnDiditScan" onclick="triggerFile('fileDidit')" class="px-3 py-1.5 rounded-lg bg-white hover:bg-cream-50 text-espresso-800 text-xs font-semibold border border-cream-300 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
                                 <i class="fa-solid fa-address-card text-indigo-600"></i> <span>Didit ID Scan</span>
                             </button>
                             <button id="btnDiditOAuth" onclick="triggerDiditOAuth()" class="px-3 py-1.5 rounded-lg bg-white hover:bg-cream-50 text-espresso-800 text-xs font-semibold border border-cream-300 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
@@ -349,6 +349,7 @@
                             </button>
 
                             <input type="file" id="fileAudio" accept="audio/*,video/*" class="hidden" onchange="handleFileUpload(this, 'audio')">
+                            <input type="file" id="fileDidit" accept="image/*" class="hidden" onchange="handleFileUpload(this, 'didit')">
                         </div>
 
                         <form id="inputForm" onsubmit="handleSend(event)" class="flex items-center gap-2">

@@ -142,16 +142,42 @@ inputForm.addEventListener("submit", (e) => {
     sendWebMessage("text", query);
 });
 
-// Trigger hidden file inputs on click
-if (btnAudio && fileAudio) {
-    btnAudio.addEventListener("click", () => fileAudio.click());
-    fileAudio.addEventListener("change", (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            addMessage("user", `🎤 [Sent Voice Note: ${file.name}]`);
-            sendWebMessage("audio", null, file);
+function triggerFile(id) {
+    const el = document.getElementById(id);
+    if (el) el.click();
+}
+
+async function handleFileUpload(inputEl, type) {
+    const file = inputEl.files[0];
+    if (!file) return;
+
+    const iconMap = { audio: '🎤 Voice Note', didit: '🪪 Didit ID Scan' };
+    addMessage("user", `Uploaded ${iconMap[type] || 'Document'}: ${file.name}`);
+
+    const formData = new FormData();
+    formData.append("phone", PHONE_NUMBER);
+    formData.append("file", file);
+
+    const endpoint = type === 'didit' ? `${BASE_URL}/webhook/didit/scan` : `${BASE_URL}/webhook/web/message`;
+    if (type === 'audio') {
+        formData.append("message_type", "audio");
+    }
+
+    try {
+        const res = await fetch(endpoint, {
+            method: "POST",
+            body: formData
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data && data.reply_text) {
+                addMessage("bot", data.reply_text);
+            }
+            fetchState();
         }
-    });
+    } catch (err) {
+        console.error("File upload error:", err);
+    }
 }
 
 // Clear session diag trigger

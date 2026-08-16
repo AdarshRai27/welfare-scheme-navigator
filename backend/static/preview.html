@@ -341,7 +341,7 @@
                             <button onclick="triggerFile('fileAudio')" class="px-3 py-1.5 rounded-lg bg-white hover:bg-cream-50 text-espresso-800 text-xs font-semibold border border-cream-300 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
                                 <i class="fa-solid fa-microphone text-warm-terracotta"></i> <span data-i18n="action_voice">Voice Note</span>
                             </button>
-                            <button onclick="triggerDiditScan()" class="px-3 py-1.5 rounded-lg bg-white hover:bg-cream-50 text-espresso-800 text-xs font-semibold border border-cream-300 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
+                            <button onclick="triggerFile('fileDidit')" class="px-3 py-1.5 rounded-lg bg-white hover:bg-cream-50 text-espresso-800 text-xs font-semibold border border-cream-300 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
                                 <i class="fa-solid fa-address-card text-indigo-600"></i> <span>Didit ID Scan</span>
                             </button>
                             <button onclick="triggerDiditOAuth()" class="px-3 py-1.5 rounded-lg bg-white hover:bg-cream-50 text-espresso-800 text-xs font-semibold border border-cream-300 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
@@ -349,6 +349,7 @@
                             </button>
 
                             <input type="file" id="fileAudio" accept="audio/*,video/*" class="hidden" onchange="handleFileUpload(this, 'audio')">
+                            <input type="file" id="fileDidit" accept="image/*" class="hidden" onchange="handleFileUpload(this, 'didit')">
                         </div>
 
                         <form id="inputForm" onsubmit="handleSend(event)" class="flex items-center gap-2">
@@ -778,20 +779,29 @@
             }
         }
 
+        function triggerFile(id) {
+            const el = document.getElementById(id);
+            if (el) el.click();
+        }
+
         async function handleFileUpload(inputEl, type) {
             const file = inputEl.files[0];
             if (!file) return;
 
-            const iconMap = { audio: '🎤 Voice Note', aadhaar: '🪪 Aadhaar Card Scan', income: '📄 Income Certificate' };
-            appendUserMessage(`Uploaded ${iconMap[type]}: ${file.name}`);
+            const iconMap = { audio: '🎤 Voice Note', didit: '🪪 Didit ID Scan' };
+            appendUserMessage(`Uploaded ${iconMap[type] || 'Document'}: ${file.name}`);
 
             const formData = new FormData();
             formData.append("phone", PHONE_NUMBER);
-            formData.append("message_type", type);
             formData.append("file", file);
 
+            const endpoint = type === 'didit' ? `${BASE_URL}/webhook/didit/scan` : `${BASE_URL}/webhook/web/message`;
+            if (type === 'audio') {
+                formData.append("message_type", "audio");
+            }
+
             try {
-                const res = await fetch(`${BASE_URL}/webhook/web/message`, {
+                const res = await fetch(endpoint, {
                     method: "POST",
                     body: formData
                 });
