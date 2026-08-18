@@ -72,6 +72,7 @@ def test_db_mappings() -> None:
 @pytest.mark.asyncio
 async def test_vector_store_mock_search() -> None:
     """Validate in-memory vector store ranking fallback works properly."""
+    VectorStore._in_memory_schemes.clear()
     store = VectorStore(is_mock=True)
 
     scheme_agri = {

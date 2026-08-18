@@ -98,18 +98,24 @@ async def llm_extract_profile(query: str) -> Dict[str, Any]:
     Returns:
         Parsed attributes dictionary.
     """
-    if settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("mock"):
+    has_api = (
+        (settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("mock"))
+        or (settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("mock"))
+    )
+
+    if has_api:
         prompt = PROFILE_EXTRACTION_PROMPT.format(query=query)
         response_text = await run_llm_completion(
             prompt=prompt,
             system_message=(
-                "You are a JSON-only extraction engine. Output ONLY valid raw JSON "
-                "containing parsed fields. Do not include markdown wraps or explanations."
+                "You are a JSON-only extraction engine for an Indian welfare schemes navigator. "
+                "Extract exact numeric age, annual_income, land_size_hectares, state, caste_category, "
+                "intent (_intent), and language (_language: 'hi', 'en', or 'hinglish'). "
+                "Output ONLY valid raw JSON without markdown formatting or code fences."
             ),
         )
         if response_text:
             try:
-                # Clean potential markdown wraps (e.g. ```json)
                 cleaned = (
                     response_text.replace("```json", "")
                     .replace("```", "")
@@ -117,15 +123,15 @@ async def llm_extract_profile(query: str) -> Dict[str, Any]:
                 )
                 data = json.loads(cleaned)
                 logger.info(
-                    f"[GROQ EXTRACT] Extracted parameters: {data}"
+                    f"[LLM EXTRACT] Extracted parameters: {data}"
                 )
                 return data
             except Exception as err:
                 logger.warning(
-                    f"[GROQ EXTRACT] Failed parsing JSON response '{response_text}': {err}"
+                    f"[LLM EXTRACT] Failed parsing JSON response '{response_text}': {err}"
                 )
 
-    # Fallback to simulation
+    # Fallback to deterministic simulation
     simulated_json = simulate_llm_call("extract", {"query": query})
     return json.loads(simulated_json)
 
@@ -151,7 +157,12 @@ async def llm_compose_response(
     Returns:
         Markdown response.
     """
-    if settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("mock"):
+    has_api = (
+        (settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("mock"))
+        or (settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("mock"))
+    )
+
+    if has_api:
         prompt = RESPONSE_COMPOSITION_PROMPT.format(
             query=query,
             intent=intent,
@@ -163,9 +174,9 @@ async def llm_compose_response(
         response_text = await run_llm_completion(
             prompt=prompt,
             system_message=(
-                "You are Sarkari Sahayak, a government welfare schemes counselor. Outline eligibility, "
-                "list checklists, and point users to pre-filled applications. Keep replies "
-                "clear, empathetic, concise (WhatsApp style), and strictly bounded to welfare schemes domain."
+                "You are Sarkari Sahayak, an AI government welfare advisor counselor. "
+                "Strictly follow the bullet-point format rules, language matching rules, and ineligibility rules. "
+                "Never suggest schemes that violate age, income, or land constraints."
             ),
         )
         if response_text:

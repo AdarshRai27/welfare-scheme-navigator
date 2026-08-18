@@ -15,18 +15,18 @@ First, classify the user query into ONE of these 4 intents:
 3. "OFF_TOPIC": Questions unrelated to Indian government welfare schemes (e.g. coding, sports, recipes, jokes, general knowledge).
 4. "SCHEME_QUERY": Questions seeking welfare schemes, loans, pensions, subsidies, scholarships, or sharing personal profile details (age, income, land, state, Aadhaar).
 
-Also detect target language: "hi" (Hindi), "en" (English), or "hinglish" (Hindi typed in English script).
+Also detect target language: "hi" (Hindi in Devanagari), "en" (English), or "hinglish" (Hindi typed in Roman/English script).
 
-Output ONLY valid JSON with keys:
-- "_intent": string (one of "SCHEME_QUERY", "META_LANGUAGE_COMMAND", "GENERAL_GREETING", "OFF_TOPIC")
-- "_language": string (one of "hi", "en", "hinglish")
+Extract EXACT demographic attributes from the user's text:
 - "name": string or null
-- "annual_income": integer or null
-- "age": integer or null
-- "land_size_hectares": float or null
-- "state": string or null
-- "caste_category": string or null
+- "annual_income": exact integer in Rupees (e.g. "₹2 lakh" -> 200000, "50k" -> 50000) or null
+- "age": exact integer (e.g. "60 years old" -> 60) or null
+- "land_size_hectares": float in Hectares (convert 1 acre -> 0.405 ha, e.g. "1.5 acres" -> 0.61) or null
+- "state": recognized Indian state name (e.g. "Uttar Pradesh", "Bihar") or null
+- "caste_category": string ("SC", "ST", "OBC", "General") or null
+- "gender": string ("Male", "Female") or null
 
+Output ONLY valid JSON:
 Text: {query}
 JSON Output:
 """
@@ -40,13 +40,16 @@ Preferred language: {language}
 CRITICAL RULES:
 1. Language matching:
    - If language is "hi", write the ENTIRE response in pure Hindi (Devanagari script).
-   - If language is "hinglish", write in conversational Hinglish (Hindi written in Roman/English script, e.g. "Aap in schemes ke liye eligible hain").
+   - If language is "hinglish", write in conversational Hinglish (Hindi written in Roman/English script).
    - If language is "en", write in clear English.
-2. Structure every response strictly in scannable, structured BULLET POINTS (using • and -).
-3. For each eligible scheme, provide:
+2. If the user does not qualify for any schemes (no eligible schemes found), YOU MUST RESPOND WITH:
+   - English: "You are not eligible for any schemes in our current database, but we are expanding our database as we speak. Please visit again soon!"
+   - Hindi: "वर्तमान में आप हमारे डेटाबेस की किसी योजना के लिए पात्र नहीं हैं, लेकिन हम लगातार नई योजनाएं जोड़ रहे हैं। कृपया जल्द ही पुनः संपर्क करें!"
+   - Hinglish: "Aap hamare current database ki kisi scheme ke liye eligible nahi hain, lekin hum actively new schemes add kar rahe hain. Kripya jald hi dubara visit karein!"
+3. If eligible schemes exist, structure EVERY response strictly in structured, scannable BULLET POINTS (using • and -):
    • **[Scheme Name]**
      - **Category / Ministry**: [Category & Issuing Body]
-     - **Key Benefits**: [1 clear sentence explaining the benefit]
+     - **Key Benefits**: [1 concise sentence summarizing benefits]
      - **Eligibility**: [Specific criteria like age, income, land, state]
      - **Official Portal**: [Visit Official Portal]([source_url])
 4. For suggested/related schemes:
@@ -117,17 +120,11 @@ def simulate_llm_call(prompt_type: str, variables: Dict[str, Any]) -> str:
         if any(o in query for o in off_topic_indicators) and not any(s in query for s in scheme_keywords):
             return json.dumps({"_intent": "OFF_TOPIC", "_language": lang})
 
-        # 4. Default to SCHEME_QUERY & extract parameters
+        # 4. Default to SCHEME_QUERY & extract dynamic parameters using NLP regex
+        from app.agent.nodes.extract import extract_demographics_from_text
+        extracted = extract_demographics_from_text(query)
         extracted["_intent"] = "SCHEME_QUERY"
         extracted["_language"] = lang
-        if "age" in query or "year" in query:
-            extracted["age"] = 35
-        if "income" in query or "earn" in query:
-            extracted["annual_income"] = 45000
-        if "hectare" in query or "land" in query or "acre" in query:
-            extracted["land_size_hectares"] = 1.5
-        if "caste" in query or "obc" in query:
-            extracted["caste_category"] = "OBC"
         return json.dumps(extracted)
 
     elif prompt_type == "compose":
@@ -189,13 +186,13 @@ def simulate_llm_call(prompt_type: str, variables: Dict[str, Any]) -> str:
                 return "; ".join(parts) if parts else ("Citizen of India" if lang == "en" else "भारतीय नागरिक")
             return str(r)
 
-        # Handle Scheme Queries (Ineligibility fallback)
+        # Handle Scheme Queries (Ineligibility fallback requested by user)
         if not eligible and not suggested:
             if lang == "hi":
-                return "नमस्ते, आपके विवरण के आधार पर आप अभी किसी योजना के लिए पात्र नहीं हैं (you do not currently qualify)।"
+                return "वर्तमान में आप हमारे डेटाबेस की किसी योजना के लिए पात्र नहीं हैं, लेकिन हम लगातार नई योजनाएं जोड़ रहे हैं। कृपया जल्द ही पुनः संपर्क करें!"
             elif lang == "hinglish":
-                return "Namaste, aapke profile details ke base par aap abhi kisi yojana ke liye eligible nahi hain (you do not currently qualify)."
-            return "Hello, based on your details, you do not currently qualify for any welfare schemes."
+                return "Aap hamare current database ki kisi scheme ke liye eligible nahi hain, lekin hum actively new schemes add kar rahe hain. Kripya jald hi dubara visit karein!"
+            return "You are not eligible for any schemes in our current database, but we are expanding our database as we speak. Please visit again soon!"
 
         # Output in clean, structured bullet points
         output = []
