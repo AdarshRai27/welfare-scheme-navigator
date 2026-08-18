@@ -93,6 +93,7 @@ async def handle_web_message(
     phone: str = Form(...),
     message_type: str = Form(...),  # "text", "audio", "aadhaar", "income"
     text: Optional[str] = Form(None),
+    language: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
 ) -> Dict[str, Any]:
     """Processes real-time user text, audio, or document uploads from the Web UI."""
@@ -101,21 +102,25 @@ async def handle_web_message(
     if not session:
         session = {
             "whatsapp_id": phone,
-            "preferred_language": "hi",
+            "preferred_language": language or "en",
             "extracted_profile": {},
         }
+    elif language:
+        session["preferred_language"] = language
 
+    active_lang = language or session.get("preferred_language", "en")
     reply_text = ""
     result = {}
 
     # 2. Process based on message type
     if message_type == "text" and text:
-        # Run agent directly on typed text
-        result = await run_agent(text, session.get("extracted_profile", {}))
+        # Run agent directly on typed text with explicit language context
+        result = await run_agent(text, session.get("extracted_profile", {}), language=active_lang)
         # Update session
         session["extracted_profile"] = result.get("extracted_profile", {})
         session["eligible_schemes"] = result.get("eligible_schemes", [])
         session["suggested_schemes"] = result.get("suggested_schemes", [])
+        session["preferred_language"] = result.get("preferred_language", active_lang)
         await session_manager.save_session(phone, session)
         reply_text = result.get("reply_text", "")
 
@@ -131,7 +136,7 @@ async def handle_web_message(
 
         # Run agent on updated profile
         trigger_query = f"Extracted {message_type} parameters"
-        result = await run_agent(trigger_query, session["extracted_profile"])
+        result = await run_agent(trigger_query, session["extracted_profile"], language=active_lang)
         session["eligible_schemes"] = result.get("eligible_schemes", [])
         session["suggested_schemes"] = result.get("suggested_schemes", [])
         await session_manager.save_session(phone, session)
@@ -149,7 +154,7 @@ async def handle_web_message(
 
         # Run agent
         result = await run_agent(
-            english_query, session.setdefault("extracted_profile", {})
+            english_query, session.setdefault("extracted_profile", {}), language=active_lang
         )
         session["extracted_profile"] = result.get("extracted_profile", {})
         session["eligible_schemes"] = result.get("eligible_schemes", [])
@@ -157,17 +162,18 @@ async def handle_web_message(
         await session_manager.save_session(phone, session)
 
         reply_text = (
-            f"🎤 **Transcription (Hindi):** {transcription}\n\n"
+            f"🎤 **Transcription:** {transcription}\n\n"
             f"{result.get('reply_text', '')}"
         )
+
     # Generate pre-filled forms if eligible schemes exist
     profile = session.get("extracted_profile", {})
     eligible = session.get("eligible_schemes", [])
     for scheme in eligible:
         scheme_name = scheme.get("name")
-        if scheme_name == "PM-Kisan Samman Nidhi":
+        if scheme_name and "PM-Kisan" in scheme_name:
             form_filler_service.fill_form("PM-Kisan Samman Nidhi", profile)
-        elif scheme_name == "UP Senior Pension Scheme":
+        elif scheme_name and "Pension" in scheme_name:
             form_filler_service.fill_form("UP Senior Pension Scheme", profile)
 
     return {
@@ -180,12 +186,17 @@ async def handle_web_message(
 @router.post("/didit/scan")
 async def handle_didit_id_scan(
     phone: str = Form("919999999999"),
+    language: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
 ) -> Dict[str, Any]:
     """Processes ID document scanning via Didit Protocol OCR service."""
     session = await session_manager.get_session(phone)
     if not session:
-        session = {"whatsapp_id": phone, "preferred_language": "hi", "extracted_profile": {}}
+        session = {"whatsapp_id": phone, "preferred_language": language or "en", "extracted_profile": {}}
+    elif language:
+        session["preferred_language"] = language
+
+    active_lang = language or session.get("preferred_language", "en")
 
     file_bytes = b"MOCK_DIDIT_AADHAAR_BYTES"
     filename_hint = "aadhaar"
@@ -202,7 +213,7 @@ async def handle_didit_id_scan(
     if not valid_fields:
         err_msg = (
             "⚠️ **दस्तावेज़ पढ़ने में असमर्थ:**\nआपके दस्तावेज़ की फोटो से विवरण स्पष्ट रूप से नहीं पढ़े जा सके। कृपया सुनिश्चित करें कि फोटो साफ़, धुंधली रहित और अच्छी रोशनी में ली गई हो, फिर पुनः प्रयास करें।"
-            if session.get("preferred_language") == "hi"
+            if active_lang == "hi"
             else "⚠️ **Document Scan Unreadable:**\nCould not clearly read details from your document photo. Please ensure the photo is well-lit, sharp, and not blurry, then try again."
         )
         return {
@@ -218,16 +229,22 @@ async def handle_didit_id_scan(
 
     # Run LangGraph reasoning workflow with embedded JSON dictionary
     trigger_query = f"Extracted didit_aadhaar parameters: {json.dumps(valid_fields)}"
-    result = await run_agent(trigger_query, session["extracted_profile"])
+    result = await run_agent(trigger_query, session["extracted_profile"], language=active_lang)
 
     session["eligible_schemes"] = result.get("eligible_schemes", [])
     session["suggested_schemes"] = result.get("suggested_schemes", [])
     await session_manager.save_session(phone, session)
 
+    header_title = {
+        "hi": "🪪 **डिडिट सत्यापित पहचान:**",
+        "hinglish": "🪪 **Didit Verified Identity:**",
+        "en": "🪪 **Didit Verified Identity:**"
+    }.get(active_lang, "🪪 **Didit Verified Identity:**")
+
     return {
         "status": "success",
         "provider": didit_res.get("provider", "didit"),
-        "reply_text": f"🪪 **Didit Verified Identity:**\n{result.get('reply_text', '')}",
+        "reply_text": f"{header_title}\n\n{result.get('reply_text', '')}",
         "session": session,
     }
 
@@ -248,27 +265,40 @@ async def handle_didit_oauth_session(
 
 
 @router.get("/didit/oauth/mock_verify")
-async def handle_didit_mock_oauth_verify(phone: str = Query("919999999999")) -> Dict[str, Any]:
+async def handle_didit_mock_oauth_verify(
+    phone: str = Query("919999999999"),
+    language: Optional[str] = Query(None),
+) -> Dict[str, Any]:
     """Mock 1-click Didit OAuth token callback that updates Redis profile without images."""
     session = await session_manager.get_session(phone)
     if not session:
-        session = {"whatsapp_id": phone, "preferred_language": "hi", "extracted_profile": {}}
+        session = {"whatsapp_id": phone, "preferred_language": language or "en", "extracted_profile": {}}
+    elif language:
+        session["preferred_language"] = language
 
-    claims = await didit_service.verify_oauth_claims(f"didit_token_{phone}")
+    active_lang = language or session.get("preferred_language", "en")
+
+    claims = await didit_service.verify_oauth_claims(f"didit_token_{phone}", session.get("extracted_profile"))
     session.setdefault("extracted_profile", {}).update(claims)
     await session_manager.save_session(phone, session)
 
     # Run agent on verified profile with embedded JSON claims
     trigger_query = f"Extracted didit_oauth parameters: {json.dumps(claims)}"
-    result = await run_agent(trigger_query, session["extracted_profile"])
+    result = await run_agent(trigger_query, session["extracted_profile"], language=active_lang)
     session["eligible_schemes"] = result.get("eligible_schemes", [])
     session["suggested_schemes"] = result.get("suggested_schemes", [])
     await session_manager.save_session(phone, session)
 
+    badge_title = {
+        "hi": "⚡ **1-क्लिक डिडिट सत्यापित पहचान:**",
+        "hinglish": "⚡ **1-Click Didit Verified Profile:**",
+        "en": "⚡ **1-Click Didit Verified Identity:**"
+    }.get(active_lang, "⚡ **1-Click Didit Verified Identity:**")
+
     return {
         "status": "success",
         "flow": "didit_oauth2_verified",
-        "reply_text": f"⚡ **1-Click Didit Verified Profile:**\n{result.get('reply_text', '')}",
+        "reply_text": f"{badge_title}\n\n{result.get('reply_text', '')}",
         "session": session,
     }
 

@@ -759,6 +759,7 @@
             formData.append("phone", PHONE_NUMBER);
             formData.append("message_type", "text");
             formData.append("text", text);
+            formData.append("language", currentLang);
 
             try {
                 const res = await fetch(`${BASE_URL}/webhook/web/message`, {
@@ -794,6 +795,7 @@
             const formData = new FormData();
             formData.append("phone", PHONE_NUMBER);
             formData.append("file", file);
+            formData.append("language", currentLang);
 
             const endpoint = type === 'didit' ? `${BASE_URL}/webhook/didit/scan` : `${BASE_URL}/webhook/web/message`;
             if (type === 'audio') {
@@ -874,24 +876,24 @@
                 const text = String(query).toLowerCase();
                 if (text.includes("farmer") || text.includes("kisan") || text.includes("land") || text.includes("किसान") || text.includes("kheti")) {
                     reply = currentLang === 'hi' 
-                        ? "नमस्ते! आपकी प्रोफ़ाइल के आधार पर, आप निम्नलिखित योजनाओं के लिए पात्र हैं:\n\n✅ **PM-Kisan Samman Nidhi**\nLink: https://pmkisan.gov.in\nपात्रता मापदंड: 2.0 हेक्टेयर से कम जमीन।\n\n💡 **संबंधित योजनाएं:**\n🔗 **किसान क्रेडिट कार्ड (KCC)**\nLink: https://pmkisan.gov.in\n🔗 **प्रधानमंत्री फसल बीमा योजना (PMFBY)**\nLink: https://pmfby.gov.in"
-                        : "Hello! Based on your profile, you qualify for the following schemes:\n\n✅ **PM-Kisan Samman Nidhi**\nLink: https://pmkisan.gov.in\nEligibility criteria: Landholding under 2.0 hectares.\n\n💡 **Related schemes:**\n🔗 **Kisan Credit Card (KCC)**\nLink: https://pmkisan.gov.in\n🔗 **PM Fasal Bima Yojana (PMFBY)**\nLink: https://pmfby.gov.in";
+                        ? "नमस्ते! आपकी प्रोफ़ाइल के आधार पर पात्र योजनाएं:\n\n• **PM-Kisan Samman Nidhi (PM-KISAN)**\n  - **श्रेणी / विभाग**: कृषि • भारत सरकार\n  - **मुख्य लाभ**: ₹6,000 प्रति वर्ष की प्रत्यक्ष वित्तीय सहायता।\n  - **पात्रता मापदंड**: भूमि < 2.0 हेक्टेयर; भारतीय नागरिक\n  - **आवेदन लिंक**: https://pmkisan.gov.in\n\n• **संबद्ध कल्याणकारी योजनाएं:**\n  - **किसान क्रेडिट कार्ड (KCC)** — रियायती अल्पकालिक ऋण सुविधा • https://pmkisan.gov.in\n  - **प्रधानमंत्री फसल बीमा योजना (PMFBY)** — फसल नुकसान सुरक्षा • https://pmfby.gov.in"
+                        : "Hello! Based on your profile, here are the qualified schemes:\n\n• **PM-Kisan Samman Nidhi (PM-KISAN)**\n  - **Category / Department**: Agriculture • Government of India\n  - **Key Benefits**: ₹6,000 annual direct benefit transfer to farmer bank accounts.\n  - **Eligibility Criteria**: Landholding under 2.0 hectares; Indian Citizen\n  - **Application Portal**: https://pmkisan.gov.in\n\n• **Related Schemes to Explore:**\n  - **Kisan Credit Card (KCC)** — Concessional crop loan • https://pmkisan.gov.in\n  - **PM Fasal Bima Yojana (PMFBY)** — Comprehensive yield insurance • https://pmfby.gov.in";
                     updateProfileCard({ land_size_hectares: 1.5, state: "Uttar Pradesh" });
                 } else if (text.includes("loan") || text.includes("startup") || text.includes("business") || text.includes("dukan") || text.includes("लोन") || text.includes("mudra")) {
-                    reply = "Namaste! Aapke profile details ke base par aap in schemes ke liye eligible hain:\n\n✅ **Pradhan Mantri Mudra Yojana - Shishu / Kishore**\nLink: https://www.mudra.org.in\nEligibility criteria: Collateral-free loan up to ₹10,00,000 for starting and expanding small businesses.\n\n💡 **Related schemes:**\n🔗 **PM SVANidhi (Street Vendor Loan)**\nLink: https://pmsvanidhi.mohua.gov.in\n🔗 **PMEGP Scheme**\nLink: https://www.kviconline.gov.in";
+                    reply = "Namaste! Aapke profile details ke base par aap in schemes ke liye eligible hain:\n\n• **Pradhan Mantri Mudra Yojana - Shishu / Kishore**\n  - **Category / Ministry**: MSME • Government\n  - **Key Benefits**: Collateral-free loan up to ₹10,00,000 for starting and expanding small businesses.\n  - **Eligibility**: Indian citizen starting or expanding business enterprise.\n  - **Link**: https://www.mudra.org.in\n\n• **Related schemes:**\n  - **PM SVANidhi (Street Vendor Loan)** — Working capital loan up to ₹50,000 • https://pmsvanidhi.mohua.gov.in\n  - **PMEGP Scheme** — Subsidy loan up to ₹50 Lakh • https://www.kviconline.gov.in";
                 } else if (text.includes("pension") || text.includes("senior") || text.includes("vridha") || text.includes("पेंशन") || text.includes("60") || text.includes("65")) {
-                    reply = "नमस्ते! आपके विवरण के आधार पर आप निम्नलिखित पेंशन योजनाओं के लिए पात्र हैं:\n\n✅ **Indira Gandhi National Old Age Pension Scheme (IGNOAPS)**\nLink: https://nsap.nic.in\nEligibility criteria: Age 60+, Below Poverty Line (BPL).\n\n✅ **UP Senior Citizen Pension Scheme**\nLink: https://sspy-up.gov.in\nEligibility criteria: Minimum age 60, annual income under ₹46,080.";
-                    updateProfileCard({ name: "Ramesh Kumar", state: "Uttar Pradesh", age: 65, annual_income: 40000 });
+                    reply = "नमस्ते! आपके विवरण के आधार पर आप निम्नलिखित पेंशन योजनाओं के लिए पात्र हैं:\n\n• **Indira Gandhi National Old Age Pension Scheme (IGNOAPS)**\n  - **श्रेणी / विभाग**: सामाजिक सुरक्षा • ग्रामीण विकास मंत्रालय\n  - **मुख्य लाभ**: वृद्ध नागरिकों के लिए मासिक वित्तीय पेंशन सहायता।\n  - **पात्रता मापदंड**: आयु: 60+ वर्ष; बीपीएल परिवार\n  - **आवेदन लिंक**: https://nsap.nic.in\n\n• **UP Senior Citizen Pension Scheme**\n  - **श्रेणी / विभाग**: पेंशन • उत्तर प्रदेश सरकार\n  - **पात्रता मापदंड**: आयु: 60+ वर्ष; वार्षिक आय < ₹46,080\n  - **आवेदन लिंक**: https://sspy-up.gov.in";
+                    updateProfileCard({ name: "Citizen", state: "Uttar Pradesh", age: 65, annual_income: 40000 });
                 } else if (text.includes("scholarship") || text.includes("student") || text.includes("school") || text.includes("college") || text.includes("छात्रवृत्ति")) {
-                    reply = "Hello! Based on student criteria, here are verified scholarship schemes:\n\n✅ **National Means-cum-Merit Scholarship Scheme (NMMSS)**\nLink: https://scholarships.gov.in\nEligibility criteria: Class 9-12 students with family income < ₹3,50,000.\n\n✅ **Post-Matric Scholarship Scheme**\nLink: https://scholarships.gov.in\nEligibility criteria: Higher education students from eligible income brackets.";
+                    reply = "Hello! Based on student criteria, here are verified scholarship schemes:\n\n• **National Means-cum-Merit Scholarship Scheme (NMMSS)**\n  - **Category / Department**: Education • Ministry of Education\n  - **Key Benefits**: ₹12,000 per annum scholarship for secondary school studies.\n  - **Eligibility Criteria**: Class 9-12 students with family income < ₹3,50,000\n  - **Link**: https://scholarships.gov.in\n\n• **Post-Matric Scholarship Scheme**\n  - **Category / Department**: Higher Education • Government of India\n  - **Eligibility Criteria**: Higher education students from eligible categories\n  - **Link**: https://scholarships.gov.in";
                 } else if (text.includes("solar") || text.includes("bijli") || text.includes("बिजली") || text.includes("सोलर")) {
-                    reply = "नमस्ते! सौर ऊर्जा और मुफ्त बिजली योजनाओं की जानकारी:\n\n✅ **PM Surya Ghar: Muft Bijli Yojana**\nLink: https://pmsuryaghar.gov.in\nEligibility criteria: Indian household with suitable roof space. Subsidy up to ₹78,000 for 300 units free solar electricity/month.";
+                    reply = "नमस्ते! सौर ऊर्जा और मुफ्त बिजली योजनाओं की जानकारी:\n\n• **PM Surya Ghar: Muft Bijli Yojana**\n  - **श्रेणी / विभाग**: नवीकरणीय ऊर्जा • भारत सरकार\n  - **मुख्य लाभ**: 300 यूनिट मुफ्त बिजली और ₹78,000 तक की प्रत्यक्ष सब्सिडी।\n  - **पात्रता मापदंड**: उपयुक्त छत वाला भारतीय परिवार\n  - **आवेदन लिंक**: https://pmsuryaghar.gov.in";
                 } else if (text.includes("health") || text.includes("ayushman") || text.includes("hospital") || text.includes("इलाज") || text.includes("स्वास्थ्य")) {
-                    reply = "नमस्ते! स्वास्थ्य सुरक्षा योजनाओं की जानकारी:\n\n✅ **Ayushman Bharat - PMJAY (Pradhan Mantri Jan Arogya Yojana)**\nLink: https://pmjay.gov.in\nEligibility criteria: ₹5 Lakh/year cashless secondary & tertiary health cover for eligible families and all senior citizens aged 70+.";
+                    reply = "नमस्ते! स्वास्थ्य सुरक्षा योजनाओं की जानकारी:\n\n• **Ayushman Bharat - PMJAY (Pradhan Mantri Jan Arogya Yojana)**\n  - **श्रेणी / विभाग**: स्वास्थ्य • राष्ट्रीय स्वास्थ्य प्राधिकरण\n  - **मुख्य लाभ**: ₹5 लाख प्रति वर्ष प्रति परिवार कैशलेस द्वितीयक और तृतीयक अस्पताल उपचार।\n  - **पात्रता मापदंड**: SECC 2011 पात्र परिवार एवं 70 वर्ष से अधिक आयु के सभी वरिष्ठ नागरिक\n  - **आवेदन लिंक**: https://pmjay.gov.in";
                 } else {
                     reply = currentLang === 'hi'
-                        ? "नमस्ते! मैं आपके लिए 125+ केंद्रीय व राज्य कल्याणकारी योजनाओं में से सर्वोत्तम योजना खोज सकता हूँ। कृपया अपना राज्य, आयु, व्यवसाय या वार्षिक आय बताएं, या डिडिट आईडी स्कैन करें।"
-                        : "Hello! I can search across 125+ verified central and state welfare schemes for you. Please share your occupation, state, age, or annual income, or tap '1-Click Didit' to verify automatically.";
+                        ? "नमस्ते! मैं आपके लिए 125+ केंद्रीय व राज्य कल्याणकारी योजनाओं में से सर्वोत्तम योजना खोज सकता हूँ।\n\n• कृपया अपना राज्य, आयु, व्यवसाय या वार्षिक आय बताएं।\n• अथवा त्वरित पात्रता जांच के लिए ऊपर दिए गए 'डिडिट आईडी स्कैन' या '1-क्लिक डिडिट' बटन का उपयोग करें।"
+                        : "Hello! I can search across 125+ verified central and state welfare schemes for you.\n\n• Please share your occupation, state, age, or annual income.\n• Or tap '1-Click Didit' above to verify your citizen profile automatically.";
                 }
                 appendBotMessage(reply);
             }, 500);
@@ -901,6 +903,7 @@
             appendUserMessage("🪪 [Initiated Didit Identity Document Scan]");
             const formData = new FormData();
             formData.append("phone", PHONE_NUMBER);
+            formData.append("language", currentLang);
             try {
                 const res = await fetch(`${BASE_URL}/webhook/didit/scan`, { method: "POST", body: formData });
                 const data = await res.json();
@@ -914,9 +917,9 @@
         }
 
         async function triggerDiditOAuth() {
-            appendUserMessage("⚡ [Initiated 1-Click Didit OAuth Verification (No Image)]");
+            appendUserMessage(currentLang === 'hi' ? "⚡ [1-क्लिक डिडिट पहचान सत्यापन प्रारंभ किया गया]" : "⚡ [Initiated 1-Click Didit OAuth Verification]");
             try {
-                const res = await fetch(`${BASE_URL}/webhook/didit/oauth/mock_verify?phone=${PHONE_NUMBER}`);
+                const res = await fetch(`${BASE_URL}/webhook/didit/oauth/mock_verify?phone=${PHONE_NUMBER}&language=${currentLang}`);
                 const data = await res.json();
                 if (data && data.reply_text) {
                     appendBotMessage(data.reply_text);

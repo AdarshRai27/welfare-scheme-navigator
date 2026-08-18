@@ -139,11 +139,14 @@ class DiditService:
             "status": "mock_created",
         }
 
-    async def verify_oauth_claims(self, token_or_session_id: str) -> Dict[str, Any]:
+    async def verify_oauth_claims(
+        self, token_or_session_id: str, existing_profile: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
         """Fetches/decodes verified identity claims from Didit OAuth token or completed session.
 
         Args:
             token_or_session_id: OAuth token or Didit session ID.
+            existing_profile: Active user demographic context if already present.
 
         Returns:
             Verified profile dictionary.
@@ -157,22 +160,22 @@ class DiditService:
                     if res.status_code == 200:
                         claims = res.json()
                         return {
-                            "name": claims.get("full_name") or claims.get("name"),
-                            "aadhaar_number": claims.get("document_number") or claims.get("aadhaar_number"),
-                            "age": claims.get("age", 62),
-                            "gender": claims.get("gender", "Male"),
-                            "state": claims.get("state", "Uttar Pradesh"),
+                            "name": claims.get("full_name") or claims.get("name") or "Verified Citizen",
+                            "aadhaar_number": claims.get("document_number") or claims.get("aadhaar_number") or "XXXX-XXXX-8921",
+                            "age": claims.get("age") or (existing_profile or {}).get("age"),
+                            "gender": claims.get("gender") or (existing_profile or {}).get("gender"),
+                            "state": claims.get("state") or (existing_profile or {}).get("state"),
                             "verified_status": True,
                         }
             except Exception as err:
                 logger.warning(f"[DIDIT OAUTH] Failed fetching claims: {err}")
 
-        # Mock claims payload
-        return {
-            "name": "Rajesh Kumar (Didit Verified)",
-            "aadhaar_number": "1234-5678-9012",
-            "age": 62,
-            "gender": "Male",
-            "state": "Uttar Pradesh",
-            "verified_status": True,
-        }
+        # Dynamic mock verification: Enhances existing session profile with verified credential
+        profile = (existing_profile or {}).copy()
+        profile["verified_status"] = True
+        if not profile.get("name") or "Rajesh" in profile.get("name", ""):
+            profile["name"] = "Verified Citizen (Didit Protocol)"
+        if not profile.get("aadhaar_number"):
+            profile["aadhaar_number"] = "XXXX-XXXX-8921"
+
+        return profile
