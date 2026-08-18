@@ -227,24 +227,61 @@ async def handle_didit_id_scan(
     session.setdefault("extracted_profile", {}).update(valid_fields)
     await session_manager.save_session(phone, session)
 
-    # Run LangGraph reasoning workflow with embedded JSON dictionary
-    trigger_query = f"Extracted didit_aadhaar parameters: {json.dumps(valid_fields)}"
-    result = await run_agent(trigger_query, session["extracted_profile"], language=active_lang)
+    # Construct personalized semantic trigger query
+    v_name = valid_fields.get("name", "Citizen")
+    v_aadhaar = valid_fields.get("aadhaar_number", "XXXX-XXXX-8921")
+    v_state = valid_fields.get("state") or session["extracted_profile"].get("state") or "India"
+    v_age = valid_fields.get("age") or session["extracted_profile"].get("age")
+    v_gender = valid_fields.get("gender") or session["extracted_profile"].get("gender")
+
+    age_clause = f", age {v_age}" if v_age else ""
+    gender_clause = f", {v_gender}" if v_gender else ""
+    semantic_query = (
+        f"I am {v_name}{age_clause}{gender_clause} from {v_state}. "
+        f"What government welfare schemes can I apply for with my verified citizen profile?"
+    )
+
+    result = await run_agent(semantic_query, session["extracted_profile"], language=active_lang)
 
     session["eligible_schemes"] = result.get("eligible_schemes", [])
     session["suggested_schemes"] = result.get("suggested_schemes", [])
     await session_manager.save_session(phone, session)
 
-    header_title = {
-        "hi": "🪪 **डिडिट सत्यापित पहचान:**",
-        "hinglish": "🪪 **Didit Verified Identity:**",
-        "en": "🪪 **Didit Verified Identity:**"
-    }.get(active_lang, "🪪 **Didit Verified Identity:**")
+    if active_lang == "hi":
+        id_badge = (
+            f"🪪 **डिडिट प्रोटोकॉल द्वारा सत्यापित पहचान:**\n"
+            f"• **नाम**: {v_name}\n"
+            f"• **आधार संख्या**: `{v_aadhaar}`\n"
+            f"• **राज्य**: {v_state}"
+            + (f"\n• **आयु**: {v_age} वर्ष" if v_age else "")
+            + (f"\n• **लिंग**: {v_gender}" if v_gender else "")
+            + "\n\n"
+        )
+    elif active_lang == "hinglish":
+        id_badge = (
+            f"🪪 **Didit Protocol Verified Identity:**\n"
+            f"• **Name**: {v_name}\n"
+            f"• **Aadhaar Number**: `{v_aadhaar}`\n"
+            f"• **State**: {v_state}"
+            + (f"\n• **Age**: {v_age} years" if v_age else "")
+            + (f"\n• **Gender**: {v_gender}" if v_gender else "")
+            + "\n\n"
+        )
+    else:
+        id_badge = (
+            f"🪪 **Didit Verified Identity Document:**\n"
+            f"• **Name**: {v_name}\n"
+            f"• **Aadhaar Number**: `{v_aadhaar}`\n"
+            f"• **State / Domicile**: {v_state}"
+            + (f"\n• **Age**: {v_age} years old" if v_age else "")
+            + (f"\n• **Gender**: {v_gender}" if v_gender else "")
+            + "\n\n"
+        )
 
     return {
         "status": "success",
         "provider": didit_res.get("provider", "didit"),
-        "reply_text": f"{header_title}\n\n{result.get('reply_text', '')}",
+        "reply_text": f"{id_badge}{result.get('reply_text', '')}",
         "session": session,
     }
 
