@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 async def run_llm_completion(
     prompt: str, system_message: str = "You are a helpful assistant."
 ) -> str:
-    """Sends a chat completion request to Groq API with OpenAI failover.
+    """Sends a chat completion request prioritizing OpenAI (gpt-4o-mini) with Groq (llama-3.3-70b) failover.
 
     Args:
         prompt: User input string.
@@ -28,37 +28,7 @@ async def run_llm_completion(
     Returns:
         Generated text response content.
     """
-    # 1. Primary: Groq API (llama-3.3-70b-versatile)
-    if settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("mock"):
-        url = "https://api.groq.com/openai/v1/chat/completions"
-        headers = {
-            "Authorization": f"Bearer {settings.GROQ_API_KEY}",
-            "Content-Type": "application/json",
-        }
-        payload = {
-            "model": "llama-3.3-70b-versatile",
-            "messages": [
-                {"role": "system", "content": system_message},
-                {"role": "user", "content": prompt},
-            ],
-            "temperature": 0.2,
-        }
-        try:
-            async with httpx.AsyncClient(timeout=20.0) as client:
-                res = await client.post(url, json=payload, headers=headers)
-                if res.status_code == 200:
-                    data = res.json()
-                    content = data["choices"][0]["message"]["content"]
-                    logger.info("[GROQ LLM] Response fetched successfully.")
-                    return content
-                else:
-                    logger.warning(
-                        f"[GROQ LLM] Failed response ({res.status_code}): {res.text}. Trying OpenAI failover..."
-                    )
-        except Exception as err:
-            logger.warning(f"[GROQ LLM] Connection error: {err}. Trying OpenAI failover...")
-
-    # 2. Secondary: OpenAI API (gpt-4o-mini)
+    # 1. Primary: OpenAI API (gpt-4o-mini) - Superior reasoning & multilingual instruction adherence
     if settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("mock"):
         url = "https://api.openai.com/v1/chat/completions"
         headers = {
@@ -71,7 +41,7 @@ async def run_llm_completion(
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": prompt},
             ],
-            "temperature": 0.2,
+            "temperature": 0.1,
         }
         try:
             async with httpx.AsyncClient(timeout=20.0) as client:
@@ -79,12 +49,42 @@ async def run_llm_completion(
                 if res.status_code == 200:
                     data = res.json()
                     content = data["choices"][0]["message"]["content"]
-                    logger.info("[OPENAI LLM] gpt-4o-mini response fetched successfully.")
+                    logger.info("[OPENAI LLM] gpt-4o-mini primary response fetched successfully.")
                     return content
                 else:
-                    logger.warning(f"[OPENAI LLM] Failed response ({res.status_code}): {res.text}")
+                    logger.warning(
+                        f"[OPENAI LLM] API error ({res.status_code}): {res.text}. Trying Groq failover..."
+                    )
         except Exception as err:
-            logger.warning(f"[OPENAI LLM] Connection error: {err}")
+            logger.warning(f"[OPENAI LLM] Connection error: {err}. Trying Groq failover...")
+
+    # 2. Secondary: Groq API (llama-3.3-70b-versatile) - Ultra-fast failover
+    if settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("mock"):
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {settings.GROQ_API_KEY}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": "llama-3.3-70b-versatile",
+            "messages": [
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": 0.1,
+        }
+        try:
+            async with httpx.AsyncClient(timeout=20.0) as client:
+                res = await client.post(url, json=payload, headers=headers)
+                if res.status_code == 200:
+                    data = res.json()
+                    content = data["choices"][0]["message"]["content"]
+                    logger.info("[GROQ LLM] Response fetched successfully via failover.")
+                    return content
+                else:
+                    logger.warning(f"[GROQ LLM] Failed response ({res.status_code}): {res.text}")
+        except Exception as err:
+            logger.warning(f"[GROQ LLM] Connection error: {err}")
 
     return ""
 

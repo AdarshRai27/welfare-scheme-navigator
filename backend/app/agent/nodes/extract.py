@@ -48,7 +48,7 @@ def extract_demographics_from_text(text: str) -> Dict[str, Any]:
     lowered = text.lower()
     res: Dict[str, Any] = {}
 
-    # 1. Extract Age
+    # 1. Extract Primary Age
     # Matches: "60 years old", "age 60", "age is 60", "aged 60", "60 saal", "उम्र 60"
     age_match = re.search(r'(?:i am|age is|age|aged|उम्र|आयु)\s*(?:is|:)?\s*(\d{1,3})', lowered)
     if not age_match:
@@ -58,6 +58,24 @@ def extract_demographics_from_text(text: str) -> Dict[str, Any]:
             res["age"] = int(age_match.group(1))
         except Exception:
             pass
+
+    # 1b. Extract Spouse & Dependents (Family Context)
+    spouse_match = re.search(r'(?:wife|husband|patni|pati|spouse)\s*(?:is|age|of)?\s*(\d{1,3})', lowered)
+    if spouse_match:
+        try:
+            res["spouse_age"] = int(spouse_match.group(1))
+        except Exception:
+            pass
+
+    child_match = re.search(r'(?:son|daughter|child|kid|baccha|beti|beta)\s*(?:is|age)?\s*(\d{1,3})', lowered)
+    if child_match:
+        try:
+            res["dependent_age"] = int(child_match.group(1))
+        except Exception:
+            pass
+
+    if any(w in lowered for w in ["student", "school", "college", "padhai", "scholarship", "study", "class"]):
+        res["has_student"] = True
 
     # 2. Extract Annual Income
     # Matches: "₹2 lakh", "2 lakh", "2 lac", "₹2,00,000", "45000", "50k", "2L"
