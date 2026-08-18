@@ -253,5 +253,64 @@ async def test_hyphenated_age_extraction_and_disqualification() -> None:
     assert "Required Documents" in res["reply_text"]
 
 
+@pytest.mark.asyncio
+async def test_hindi_birth_year_and_pure_hindi_output() -> None:
+    """Test extracting birth year 1964, name, and pure Hindi output."""
+    from app.agent.nodes.extract import extract_demographics_from_text
+    
+    query = (
+        "मेरा नाम रमेश कुमार है, मेरी उम्र 59 साल है, लेकिन मेरे आधार कार्ड में जन्म वर्ष 1964 है। "
+        "मेरे परिवार की आय ₹1.9 लाख है और मेरे पास यूपी में 2 एकड़ जमीन है। "
+        "मैं किन वरिष्ठ नागरिक और किसान योजनाओं के लिए पात्र हूँ?"
+    )
+    
+    extracted = extract_demographics_from_text(query)
+    assert extracted["age"] == 62
+    assert extracted["annual_income"] == 190000
+    assert extracted["land_size_hectares"] == 0.81
+    assert extracted["state"] == "Uttar Pradesh"
+    assert "रमेश कुमार" in extracted["name"]
+
+    # Verify agent execution
+    VectorStore._in_memory_schemes.clear()
+    store = VectorStore(is_mock=True)
+
+    pm_kisan = {
+        "id": uuid.uuid4(),
+        "name": "PM-Kisan Samman Nidhi",
+        "issuing_body": "Central",
+        "category": "Agriculture",
+        "description": "Financial support for landowning farmers",
+        "eligibility_rules": {
+            "max_land_size_hectares": 2.0,
+        },
+        "source_url": "https://pmkisan.gov.in",
+    }
+    up_pension = {
+        "id": uuid.uuid4(),
+        "name": "UP Senior Pension Scheme",
+        "issuing_body": "State",
+        "state": "Uttar Pradesh",
+        "category": "Pension",
+        "description": "Old age pension support for citizens in UP",
+        "eligibility_rules": {
+            "min_age": 60,
+            "income_limit": 200000,
+        },
+        "source_url": "https://sspy-up.gov.in",
+    }
+    await store.add_scheme(pm_kisan)
+    await store.add_scheme(up_pension)
+
+    res = await run_agent(user_query=query, extracted_profile={}, language="hi")
+    
+    assert len(res["eligible_schemes"]) == 2
+    # Verify Hindi translations in reply
+    assert "पीएम-किसान" in res["reply_text"] or "PM-Kisan" in res["reply_text"]
+    assert "पात्र हैं" in res["reply_text"]
+    assert "दस्तावेज़" in res["reply_text"]
+
+
+
 
 

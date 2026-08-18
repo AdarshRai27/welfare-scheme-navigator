@@ -48,20 +48,38 @@ def extract_demographics_from_text(text: str) -> Dict[str, Any]:
     lowered = text.lower()
     res: Dict[str, Any] = {}
 
-    # 1. Extract Primary Age
-    # Matches: "52-year-old", "52 years old", "i am a 52 year old", "age 60", "age is 60", "aged 60", "60 saal", "उम्र 60"
-    age_match = re.search(r'(\d{1,3})[\s\-]*(?:years?|yrs?|yr|saal|varsh|वर्ष|साल)[\s\-]*(?:old)?', lowered)
-    if not age_match:
-        age_match = re.search(r'(?:i am|i\'m|age is|age|aged|उम्र|आयु)\s*(?:a|an)?\s*(?:is|:)?\s*(\d{1,3})', lowered)
-    if not age_match:
-        age_match = re.search(r'(?:farmer|citizen|man|woman|person|applicant)\s*(?:of|aged|age)?\s*(\d{1,3})', lowered)
-    if not age_match:
-        age_match = re.search(r'\b(\d{1,2})\s*(?:yo|y/o)\b', lowered)
-    if age_match:
+    # 1. Extract Name
+    name_match = re.search(r'(?:मेरा नाम|my name is|name is|i am)\s+([A-Za-z\u0900-\u097F]+(?:\s+[A-Za-z\u0900-\u097F]+)?)', lowered)
+    if name_match:
+        cand_name = name_match.group(1).strip()
+        if not any(w in cand_name.lower() for w in ["a", "an", "the", "farmer", "kisan", "citizen", "from", "years"]):
+            res["name"] = cand_name.title()
+
+    # 1a. Extract Primary Age & Birth Year
+    # Matches: "52-year-old", "52 years old", "i am a 52 year old", "उम्र 59 साल", "जन्म वर्ष 1964"
+    birth_year_match = re.search(r'(?:जन्म वर्ष|जन्म का वर्ष|birth year|year of birth|dob|born in)\s*(?:is|:)?\s*(\d{4})', lowered)
+    if birth_year_match:
         try:
-            res["age"] = int(age_match.group(1))
+            byear = int(birth_year_match.group(1))
+            if 1920 <= byear <= 2026:
+                res["age"] = 2026 - byear
+                res["birth_year"] = byear
         except Exception:
             pass
+
+    if "age" not in res:
+        age_match = re.search(r'(\d{1,3})[\s\-]*(?:years?|yrs?|yr|saal|varsh|वर्ष|साल)[\s\-]*(?:old)?', lowered)
+        if not age_match:
+            age_match = re.search(r'(?:i am|i\'m|age is|age|aged|उम्र|आयु)\s*(?:a|an)?\s*(?:is|:)?\s*(\d{1,3})', lowered)
+        if not age_match:
+            age_match = re.search(r'(?:farmer|citizen|man|woman|person|applicant)\s*(?:of|aged|age)?\s*(\d{1,3})', lowered)
+        if not age_match:
+            age_match = re.search(r'\b(\d{1,2})\s*(?:yo|y/o)\b', lowered)
+        if age_match:
+            try:
+                res["age"] = int(age_match.group(1))
+            except Exception:
+                pass
 
     # 1b. Extract Spouse & Dependents (Family Context)
     spouse_match = re.search(r'(?:wife|husband|patni|pati|spouse)\s*(?:is|age|of)?\s*(\d{1,3})', lowered)
@@ -82,21 +100,21 @@ def extract_demographics_from_text(text: str) -> Dict[str, Any]:
         res["has_student"] = True
 
     # 2. Extract Annual Income
-    # Matches: "₹2 lakh", "2 lakh", "2 lac", "₹2,00,000", "45000", "50k", "2L"
-    income_match = re.search(r'(?:income|earn|kamai|salary|aay|आय)\s*(?:is|of|:)?\s*₹?\s*([\d,\.]+)\s*(lakh|lac|k|crore|cr|hazaar|thousand|l)?', lowered)
+    # Matches: "₹2 lakh", "₹1.9 लाख", "2 lakh", "2 lac", "₹2,00,000", "45000", "50k", "2L"
+    income_match = re.search(r'(?:income|earn|kamai|salary|aay|आय)\s*(?:is|of|:)?\s*₹?\s*([\d,\.]+)\s*(लाख|हजार|करोड़|lakh|lac|k|crore|cr|hazaar|thousand|l)?', lowered)
     if not income_match:
-        income_match = re.search(r'₹\s*([\d,\.]+)\s*(lakh|lac|k|crore|cr|l)?', lowered)
+        income_match = re.search(r'₹\s*([\d,\.]+)\s*(लाख|हजार|करोड़|lakh|lac|k|crore|cr|l)?', lowered)
     
     if income_match:
         val_str = income_match.group(1).replace(",", "").strip()
         unit = (income_match.group(2) or "").strip().lower()
         try:
             num = float(val_str)
-            if unit in ("lakh", "lac", "l"):
+            if unit in ("lakh", "lac", "l", "लाख"):
                 res["annual_income"] = int(num * 100000)
-            elif unit == "k" or unit in ("hazaar", "thousand"):
+            elif unit in ("k", "hazaar", "thousand", "हजार"):
                 res["annual_income"] = int(num * 1000)
-            elif unit in ("crore", "cr"):
+            elif unit in ("crore", "cr", "करोड़"):
                 res["annual_income"] = int(num * 10000000)
             else:
                 res["annual_income"] = int(num)
@@ -119,12 +137,27 @@ def extract_demographics_from_text(text: str) -> Dict[str, Any]:
         except Exception:
             pass
 
-    # 4. Extract State
-    for token, full_name in INDIAN_STATES.items():
-        pattern = r'\b' + re.escape(token) + r'\b'
-        if re.search(pattern, lowered):
-            res["state"] = full_name
+    # 4. Extract State (support both English and Devanagari)
+    hindi_states_map = {
+        "यूपी": "Uttar Pradesh", "यू.पी.": "Uttar Pradesh", "उत्तर प्रदेश": "Uttar Pradesh",
+        "बिहार": "Bihar", "राजस्थान": "Rajasthan", "मध्य प्रदेश": "Madhya Pradesh", "एमपी": "Madhya Pradesh",
+        "महाराष्ट्र": "Maharashtra", "गुजरात": "Gujarat", "पंजाब": "Punjab", "हरियाणा": "Haryana",
+        "उत्तराखंड": "Uttarakhand", "पश्चिम बंगाल": "West Bengal", "दिल्ली": "Delhi",
+        "तमिलनाडु": "Tamil Nadu", "कर्नाटक": "Karnataka", "केरल": "Kerala", "ओडिशा": "Odisha",
+        "झारखंड": "Jharkhand", "छत्तीसगढ़": "Chhattisgarh", "असम": "Assam", "तेलंगाना": "Telangana",
+        "आंध्र प्रदेश": "Andhra Pradesh"
+    }
+    for h_token, h_full in hindi_states_map.items():
+        if h_token in lowered:
+            res["state"] = h_full
             break
+
+    if "state" not in res:
+        for token, full_name in INDIAN_STATES.items():
+            pattern = r'\b' + re.escape(token) + r'\b'
+            if re.search(pattern, lowered):
+                res["state"] = full_name
+                break
 
     # 5. Extract Caste Category
     if "sc" in lowered or "scheduled caste" in lowered:
