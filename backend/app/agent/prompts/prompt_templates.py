@@ -145,11 +145,11 @@ def simulate_llm_call(prompt_type: str, variables: Dict[str, Any]) -> str:
         # Handle General Greetings
         if intent == "GENERAL_GREETING":
             if lang == "hi":
-                return "नमस्ते! मैं आपका सरकारी सहायक हूँ। मैं आपको 50+ सरकारी कल्याणकारी योजनाओं (जैसे किसान सम्मान निधि, मुद्रा लोन, वरिष्ठ पेंशन, आयुष्मान भारत) की पात्रता जांचने और आवेदन करने में सहायता कर सकता हूँ। आप अपना प्रश्न पूछें या अपने दस्तावेज की फोटो स्कैन करें।"
+                return "नमस्ते! मैं आपका सरकारी सहायक हूँ। 🙏\n\nमैं आपको 125+ से अधिक केंद्रीय और राज्य सरकार की कल्याणकारी योजनाओं (जैसे किसान सम्मान निधि, मुद्रा लोन, वरिष्ठ पेंशन, लाडली बहना, आयुष्मान भारत, छात्रवृत्ति) की पात्रता जांचने और आवेदन करने में सहायता कर सकता हूँ।\n\nआप अपना प्रश्न पूछें, अपनी ज़रूरत बताएं (जैसे: 'मुझे दुकान के लिए लोन चाहिए' या 'किसान योजनाएं'), या अपने आधार कार्ड को स्कैन करें।"
             elif lang == "hinglish":
-                return "Namaste! Main aapka Sarkari Sahayak hoon. Main aapko 50+ government welfare schemes (jaise PM-Kisan, Mudra Loan, Pension, Ayushman Bharat) me eligibility check karne aur search karne me help kar sakta hoon. Aap apna question poochein ya document scan karein."
+                return "Namaste! Main aapka Sarkari Sahayak hoon. 🙏\n\nMain aapko 125+ Central aur State government welfare schemes (jaise PM-Kisan, Mudra Loan, Pension, Ladli Behna, Ayushman Bharat, Scholarships) me eligibility check karne aur apply karne me help kar sakta hoon.\n\nAap apna question poochein ya Didit ID scan karein."
             else:
-                return "Hello! I am Sarkari Sahayak, your AI counselor for Indian government welfare schemes. I can help you discover and check eligibility for over 50 central and state schemes (such as PM-Kisan, Mudra Loans, Senior Pension, and Ayushman Bharat). How can I assist you today?"
+                return "Hello! I am Sarkari Sahayak, your AI counselor for Indian government welfare schemes. 🙏\n\nI can help you discover and check eligibility for over 125 central and state schemes (such as PM-Kisan, Mudra Loans, Senior Pension, Ayushman Bharat, and Student Scholarships). How can I assist you today?"
 
         # Handle Off-Topic Queries (Domain Limitation Guardrail)
         if intent == "OFF_TOPIC":
@@ -160,12 +160,26 @@ def simulate_llm_call(prompt_type: str, variables: Dict[str, Any]) -> str:
             else:
                 return "I apologize, but I am specifically designed to assist only with Indian government welfare schemes, benefits, and eligibility checks (such as pensions, farmer subsidies, business loans, and scholarships). Please ask a question related to government schemes."
 
+        # Helper to format eligibility rules cleanly
+        def format_rules(r):
+            if isinstance(r, dict):
+                parts = []
+                if "min_age" in r: parts.append(f"Min age: {r['min_age']} yrs")
+                if "max_age" in r: parts.append(f"Max age: {r['max_age']} yrs")
+                if "income_limit" in r: parts.append(f"Annual Income limit: ₹{r['income_limit']:,}")
+                if "max_land_size_hectares" in r: parts.append(f"Max Land: {r['max_land_size_hectares']} Ha")
+                if "gender" in r: parts.append(f"Gender: {r['gender']}")
+                if "caste_categories" in r: parts.append(f"Categories: {', '.join(r['caste_categories'])}")
+                if "state" in r: parts.append(f"State: {r['state']}")
+                return "; ".join(parts) if parts else "Citizen of India"
+            return str(r)
+
         # Handle Scheme Queries
         if not eligible and not suggested:
             if lang == "hi":
-                return "नमस्ते, आपके विवरण के आधार पर आप अभी किसी योजना के लिए पात्र नहीं हैं।"
+                return "नमस्ते, आपके विवरण के आधार पर आप अभी किसी योजना के लिए पात्र नहीं हैं (you do not currently qualify)।"
             elif lang == "hinglish":
-                return "Namaste, aapke profile details ke base par aap abhi kisi yojana ke liye eligible nahi hain."
+                return "Namaste, aapke profile details ke base par aap abhi kisi yojana ke liye eligible nahi hain (you do not currently qualify)."
             return "Hello, based on your details, you do not currently qualify for any welfare schemes."
 
         output = []
@@ -173,8 +187,9 @@ def simulate_llm_call(prompt_type: str, variables: Dict[str, Any]) -> str:
             output.append("नमस्ते! आपके विवरण के आधार पर आप निम्नलिखित योजनाओं के लिए पात्र हैं:\n")
             for s in eligible:
                 output.append(f"✅ **{s['name']}**")
+                output.append(f"विवरण: {s.get('description', '')}")
                 output.append(f"लिंक: {s.get('source_url') or 'https://myscheme.gov.in'}")
-                output.append(f"पात्रता मानदंड: {s.get('eligibility_rules')}\n")
+                output.append(f"पात्रता मानदंड: {format_rules(s.get('eligibility_rules'))}\n")
             if suggested:
                 output.append("\n💡 **संबद्ध योजनाएं:**")
                 for s in suggested:
@@ -184,8 +199,9 @@ def simulate_llm_call(prompt_type: str, variables: Dict[str, Any]) -> str:
             output.append("Namaste! Aapke profile details ke base par aap in schemes ke liye eligible hain:\n")
             for s in eligible:
                 output.append(f"✅ **{s['name']}**")
+                output.append(f"Description: {s.get('description', '')}")
                 output.append(f"Link: {s.get('source_url') or 'https://myscheme.gov.in'}")
-                output.append(f"Eligibility criteria: {s.get('eligibility_rules')}\n")
+                output.append(f"Eligibility criteria: {format_rules(s.get('eligibility_rules'))}\n")
             if suggested:
                 output.append("\n💡 **Related schemes:**")
                 for s in suggested:
@@ -195,8 +211,9 @@ def simulate_llm_call(prompt_type: str, variables: Dict[str, Any]) -> str:
             output.append("Hello! Based on your profile, you qualify for the following schemes:\n")
             for s in eligible:
                 output.append(f"✅ **{s['name']}**")
+                output.append(f"Description: {s.get('description', '')}")
                 output.append(f"Link: {s.get('source_url') or 'https://myscheme.gov.in'}")
-                output.append(f"Eligibility criteria: {s.get('eligibility_rules')}\n")
+                output.append(f"Eligibility criteria: {format_rules(s.get('eligibility_rules'))}\n")
             if suggested:
                 output.append("\n💡 **Additional Related Schemes:**")
                 for s in suggested:

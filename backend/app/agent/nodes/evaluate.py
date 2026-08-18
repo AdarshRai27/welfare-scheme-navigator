@@ -38,8 +38,9 @@ async def evaluate_rules_node(state: Dict[str, Any]) -> Dict[str, Any]:
                 is_eligible = False
 
         # 3. Evaluate Land Size Thresholds
-        if "land_size_limit" in rules and profile.get("land_size_hectares") is not None:
-            if profile["land_size_hectares"] > rules["land_size_limit"]:
+        land_limit = rules.get("max_land_size_hectares") or rules.get("land_size_limit")
+        if land_limit is not None and profile.get("land_size_hectares") is not None:
+            if profile["land_size_hectares"] > land_limit:
                 is_eligible = False
         # 4. Evaluate Caste Category Matches
         if "caste_categories" in rules and "caste_category" in profile:

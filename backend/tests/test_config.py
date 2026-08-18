@@ -11,5 +11,4 @@ def test_settings_load() -> None:
     )
     assert settings.REDIS_URL == "redis://localhost:6379/1"
     assert settings.OLLAMA_MODEL == "llama3.1:8b"
-    assert settings.WHATSAPP_VERIFY_TOKEN == "test_whatsapp_verify_token"
     assert settings.BHASHINI_SOURCE_LANG == "hi"

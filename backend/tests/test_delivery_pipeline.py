@@ -50,35 +50,17 @@ async def test_end_to_end_delivery_and_form_filling() -> None:
         },
     )
 
-    # Post an agricultural enquiry text query to trigger RAG
-    payload = {
-        "object": "whatsapp_business_account",
-        "entry": [
-            {
-                "id": "entry_id_1",
-                "changes": [
-                    {
-                        "value": {
-                            "messaging_product": "whatsapp",
-                            "messages": [
-                                {
-                                    "from": user_phone,
-                                    "id": "wamid.text_enquiry",
-                                    "timestamp": "1700000030",
-                                    "text": {"body": "Farmer crop support schemes"},
-                                    "type": "text",
-                                }
-                            ],
-                        },
-                        "field": "messages",
-                    }
-                ],
-            }
-        ],
-    }
-
-    response = client.post("/webhook/whatsapp", json=payload)
+    # Post an agricultural enquiry text query to trigger RAG via web message endpoint
+    response = client.post(
+        "/webhook/web/message",
+        data={
+            "phone": user_phone,
+            "message_type": "text",
+            "text": "Farmer crop support schemes",
+        },
+    )
     assert response.status_code == 200
+    assert response.json()["status"] == "success"
 
     # Verify that the pre-filled JSON form file was created in static folder
     expected_filename = "pm_kisan_samman_nidhi_filled.json"

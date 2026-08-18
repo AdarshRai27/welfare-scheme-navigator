@@ -15,11 +15,6 @@ class Settings(BaseSettings):
     OLLAMA_HOST: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3"
 
-    # WhatsApp API Webhook Credentials
-    WHATSAPP_ACCESS_TOKEN: str = "mock_token"
-    WHATSAPP_VERIFY_TOKEN: str = "mock_verify"
-    WHATSAPP_PHONE_NUMBER_ID: str = "mock_phone"
-
     # Bhashini Speech API Credentials
     BHASHINI_API_KEY: str = "mock_key"
     BHASHINI_USER_ID: str = "mock_user"

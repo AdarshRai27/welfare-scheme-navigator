@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 async def run_llm_completion(
     prompt: str, system_message: str = "You are a helpful assistant."
 ) -> str:
-    """Sends a chat completion request to the Groq API.
+    """Sends a chat completion request to Groq API with OpenAI failover.
 
     Args:
         prompt: User input string.
@@ -28,6 +28,7 @@ async def run_llm_completion(
     Returns:
         Generated text response content.
     """
+    # 1. Primary: Groq API (llama-3.3-70b-versatile)
     if settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("mock"):
         url = "https://api.groq.com/openai/v1/chat/completions"
         headers = {
@@ -43,23 +44,47 @@ async def run_llm_completion(
             "temperature": 0.2,
         }
         try:
-            async with httpx.AsyncClient(timeout=25.0) as client:
+            async with httpx.AsyncClient(timeout=20.0) as client:
                 res = await client.post(url, json=payload, headers=headers)
                 if res.status_code == 200:
                     data = res.json()
                     content = data["choices"][0]["message"]["content"]
-                    logger.info(
-                        "[GROQ LLM] llama-3.3-70b-versatile response fetched successfully."
-                    )
+                    logger.info("[GROQ LLM] Response fetched successfully.")
                     return content
                 else:
                     logger.warning(
-                        f"[GROQ LLM] Failed response (status {res.status_code}): {res.text}"
+                        f"[GROQ LLM] Failed response ({res.status_code}): {res.text}. Trying OpenAI failover..."
                     )
         except Exception as err:
-            logger.warning(
-                f"[GROQ LLM] Connection error: {err}"
-            )
+            logger.warning(f"[GROQ LLM] Connection error: {err}. Trying OpenAI failover...")
+
+    # 2. Secondary: OpenAI API (gpt-4o-mini)
+    if settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("mock"):
+        url = "https://api.openai.com/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": "gpt-4o-mini",
+            "messages": [
+                {"role": "system", "content": system_message},
+                {"role": "user", "content": prompt},
+            ],
+            "temperature": 0.2,
+        }
+        try:
+            async with httpx.AsyncClient(timeout=20.0) as client:
+                res = await client.post(url, json=payload, headers=headers)
+                if res.status_code == 200:
+                    data = res.json()
+                    content = data["choices"][0]["message"]["content"]
+                    logger.info("[OPENAI LLM] gpt-4o-mini response fetched successfully.")
+                    return content
+                else:
+                    logger.warning(f"[OPENAI LLM] Failed response ({res.status_code}): {res.text}")
+        except Exception as err:
+            logger.warning(f"[OPENAI LLM] Connection error: {err}")
 
     return ""
 
