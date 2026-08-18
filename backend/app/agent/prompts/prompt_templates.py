@@ -203,48 +203,57 @@ def simulate_llm_call(prompt_type: str, variables: Dict[str, Any]) -> str:
                 return "Aap hamare current database ki kisi scheme ke liye eligible nahi hain, lekin hum actively new schemes add kar rahe hain. Kripya jald hi dubara visit karein!"
             return "You are not eligible for any schemes in our current database, but we are expanding our database as we speak. Please visit again soon!"
 
-        # Output in clean, structured bullet points
+        # Output in clean, structured bullet points with explicit Markdown spacing
         output = []
         if lang == "hi":
             output.append("नमस्ते! आपके विवरण के आधार पर आप निम्नलिखित योजनाओं के लिए पात्र हैं:\n")
             for s in eligible:
-                output.append(f"• **{s['name']}**")
-                output.append(f"  - **श्रेणी / विभाग**: {s.get('category', 'कल्याण')} • {s.get('issuing_body', 'भारत सरकार')}")
-                if s.get("description"):
-                    output.append(f"  - **मुख्य लाभ**: {s.get('description')}")
-                output.append(f"  - **पात्रता मापदंड**: {format_rules(s.get('eligibility_rules'))}")
-                output.append(f"  - **आधिकारिक आवेदन लिंक**: {s.get('source_url') or 'https://myscheme.gov.in'}\n")
+                docs = "आधार कार्ड, बैंक पासबुक, भू-अभिलेख (खतौनी)" if "Agriculture" in s.get("category", "") else "आधार कार्ड, बैंक पासबुक, आय प्रमाण पत्र"
+                output.append(
+                    f"• **{s['name']}**\n"
+                    f"  - **श्रेणी / विभाग**: {s.get('category', 'कल्याण')} • {s.get('issuing_body', 'भारत सरकार')}\n"
+                    f"  - **मुख्य लाभ**: {s.get('description', '')}\n"
+                    f"  - **पात्रता मापदंड**: {format_rules(s.get('eligibility_rules'))}\n"
+                    f"  - **आवश्यक दस्तावेज़**: {docs}\n"
+                    f"  - **आधिकारिक आवेदन लिंक**: {s.get('source_url') or 'https://myscheme.gov.in'}\n"
+                )
             if suggested:
                 output.append("• **संबद्ध कल्याणकारी योजनाएं:**")
                 for s in suggested:
-                    output.append(f"  - **{s['name']}** — {s.get('description', '')} • Link: {s.get('source_url') or 'https://myscheme.gov.in'}")
+                    output.append(f"  - **{s['name']}** — {s.get('description', '')} • [पोर्टल लिंक]({s.get('source_url') or 'https://myscheme.gov.in'})")
         elif lang == "hinglish":
             output.append("Namaste! Aapke profile details ke base par aap in schemes ke liye eligible hain:\n")
             for s in eligible:
-                output.append(f"• **{s['name']}**")
-                output.append(f"  - **Category / Ministry**: {s.get('category', 'Welfare')} • {s.get('issuing_body', 'Government')}")
-                if s.get("description"):
-                    output.append(f"  - **Key Benefits**: {s.get('description')}")
-                output.append(f"  - **Eligibility criteria**: {format_rules(s.get('eligibility_rules'))}")
-                output.append(f"  - **Link**: {s.get('source_url') or 'https://myscheme.gov.in'}\n")
+                docs = "Aadhaar Card, Bank Passbook, Land Record (Khatauni)" if "Agriculture" in s.get("category", "") else "Aadhaar Card, Bank Passbook, Income Certificate"
+                output.append(
+                    f"• **{s['name']}**\n"
+                    f"  - **Category / Ministry**: {s.get('category', 'Welfare')} • {s.get('issuing_body', 'Government')}\n"
+                    f"  - **Key Benefits**: {s.get('description', '')}\n"
+                    f"  - **Eligibility criteria**: {format_rules(s.get('eligibility_rules'))}\n"
+                    f"  - **Required Documents**: {docs}\n"
+                    f"  - **Official Portal**: {s.get('source_url') or 'https://myscheme.gov.in'}\n"
+                )
             if suggested:
                 output.append("• **Related schemes:**")
                 for s in suggested:
-                    output.append(f"  - **{s['name']}** — {s.get('description', '')} • Link: {s.get('source_url') or 'https://myscheme.gov.in'}")
+                    output.append(f"  - **{s['name']}** — {s.get('description', '')} • [Official Link]({s.get('source_url') or 'https://myscheme.gov.in'})")
         else:
             output.append("Hello! Based on your profile, you qualify for the following schemes:\n")
             for s in eligible:
-                output.append(f"• **{s['name']}**")
-                output.append(f"  - **Category / Department**: {s.get('category', 'Welfare')} • {s.get('issuing_body', 'Government of India')}")
-                if s.get("description"):
-                    output.append(f"  - **Key Benefits**: {s.get('description')}")
-                output.append(f"  - **Eligibility criteria**: {format_rules(s.get('eligibility_rules'))}")
-                output.append(f"  - **Link**: {s.get('source_url') or 'https://myscheme.gov.in'}\n")
+                docs = "Aadhaar Card, Bank Passbook, Land Revenue Record (Khatauni)" if "Agriculture" in s.get("category", "") else "Aadhaar Card, Bank Passbook, Income Certificate"
+                output.append(
+                    f"• **{s['name']}**\n"
+                    f"  - **Category / Ministry**: {s.get('category', 'Welfare')} • {s.get('issuing_body', 'Government of India')}\n"
+                    f"  - **Key Benefits**: {s.get('description', '')}\n"
+                    f"  - **Eligibility criteria**: {format_rules(s.get('eligibility_rules'))}\n"
+                    f"  - **Required Documents**: {docs}\n"
+                    f"  - **Official Application Portal**: {s.get('source_url') or 'https://myscheme.gov.in'}\n"
+                )
             if suggested:
                 output.append("• **Additional Related Schemes:**")
                 for s in suggested:
-                    output.append(f"  - **{s['name']}** — {s.get('description', '')} • Link: {s.get('source_url') or 'https://myscheme.gov.in'}")
+                    output.append(f"  - **{s['name']}** — {s.get('description', '')} • [Official Portal]({s.get('source_url') or 'https://myscheme.gov.in'})")
 
-        return "\n".join(output)
+        return "\n\n".join(output)
 
     return "Mock Response text"

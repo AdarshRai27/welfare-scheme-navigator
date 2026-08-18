@@ -167,9 +167,9 @@ async def llm_compose_response(
             query=query,
             intent=intent,
             language=language,
-            profile=json.dumps(profile, indent=2),
-            eligible=json.dumps(eligible, indent=2),
-            suggested=json.dumps(suggested, indent=2),
+            profile=json.dumps(profile, indent=2, default=str),
+            eligible=json.dumps(eligible, indent=2, default=str),
+            suggested=json.dumps(suggested, indent=2, default=str),
         )
         response_text = await run_llm_completion(
             prompt=prompt,

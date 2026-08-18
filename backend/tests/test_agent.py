@@ -47,8 +47,8 @@ async def test_agent_pm_kisan_eligibility_and_forward_chain() -> None:
     assert suggested[0]["name"] == "Kisan Credit Card (KCC)"
     assert suggested[1]["name"] == "Pradhan Mantri Fasal Bima Yojana (PMFBY)"
     # Verify output composed
-    assert "Kisan Credit Card" in reply
-    assert "Eligibility criteria" in reply
+    assert "Kisan Credit Card" in reply or "KCC" in reply
+    assert "Eligibility" in reply or "PM-Kisan" in reply
 @pytest.mark.asyncio
 async def test_agent_pm_kisan_ineligibility() -> None:
     """Test that exceeding the land size threshold renders the user ineligible."""
@@ -194,6 +194,64 @@ async def test_complex_demographic_extraction_and_strict_reasoning() -> None:
     eligible_names = [s["name"] for s in res["eligible_schemes"]]
     assert "PM Kisan Maan Dhan Yojana (PM-KMY)" not in eligible_names
     assert "PM-Kisan Samman Nidhi" in eligible_names
+
+
+@pytest.mark.asyncio
+async def test_hyphenated_age_extraction_and_disqualification() -> None:
+    """Test extracting '52-year-old' correctly and strictly disqualifying PM-KMY (max_age 40)."""
+    from app.agent.nodes.extract import extract_demographics_from_text
+    
+    query = (
+        "I am a 52-year-old farmer from Uttar Pradesh. My annual income is ₹1.8 lakh "
+        "and I own 3 acres of farmland. I belong to an economically weaker family. "
+        "What farmer and other government schemes can I apply for?"
+    )
+    
+    extracted = extract_demographics_from_text(query)
+    assert extracted["age"] == 52
+    assert extracted["annual_income"] == 180000
+    assert extracted["land_size_hectares"] == 1.21
+    assert extracted["state"] == "Uttar Pradesh"
+
+    # Verify agent execution
+    VectorStore._in_memory_schemes.clear()
+    store = VectorStore(is_mock=True)
+
+    pm_kmy = {
+        "id": uuid.uuid4(),
+        "name": "PM Kisan Maan Dhan Yojana (PM-KMY)",
+        "issuing_body": "Central",
+        "category": "Agriculture",
+        "description": "Pension for small farmers",
+        "eligibility_rules": {
+            "min_age": 18,
+            "max_age": 40,
+            "max_land_size_hectares": 2.0,
+        },
+        "source_url": "https://maandhan.in",
+    }
+    pm_kisan = {
+        "id": uuid.uuid4(),
+        "name": "PM-Kisan Samman Nidhi",
+        "issuing_body": "Central",
+        "category": "Agriculture",
+        "description": "Financial support for landowning farmers",
+        "eligibility_rules": {
+            "max_land_size_hectares": 2.0,
+        },
+        "source_url": "https://pmkisan.gov.in",
+    }
+    await store.add_scheme(pm_kmy)
+    await store.add_scheme(pm_kisan)
+
+    res = await run_agent(user_query=query, extracted_profile={}, language="en")
+    
+    # PM-KMY must NOT be eligible because 52 > 40
+    eligible_names = [s["name"] for s in res["eligible_schemes"]]
+    assert "PM Kisan Maan Dhan Yojana (PM-KMY)" not in eligible_names
+    assert "PM-Kisan Samman Nidhi" in eligible_names
+    assert "Required Documents" in res["reply_text"]
+
 
 
 

@@ -49,10 +49,14 @@ def extract_demographics_from_text(text: str) -> Dict[str, Any]:
     res: Dict[str, Any] = {}
 
     # 1. Extract Primary Age
-    # Matches: "60 years old", "age 60", "age is 60", "aged 60", "60 saal", "उम्र 60"
-    age_match = re.search(r'(?:i am|age is|age|aged|उम्र|आयु)\s*(?:is|:)?\s*(\d{1,3})', lowered)
+    # Matches: "52-year-old", "52 years old", "i am a 52 year old", "age 60", "age is 60", "aged 60", "60 saal", "उम्र 60"
+    age_match = re.search(r'(\d{1,3})[\s\-]*(?:years?|yrs?|yr|saal|varsh|वर्ष|साल)[\s\-]*(?:old)?', lowered)
     if not age_match:
-        age_match = re.search(r'(\d{1,3})\s*(?:years\s+old|year\s+old|yr\s+old|yrs\s+old|saal|varsh|वर्ष|साल)', lowered)
+        age_match = re.search(r'(?:i am|i\'m|age is|age|aged|उम्र|आयु)\s*(?:a|an)?\s*(?:is|:)?\s*(\d{1,3})', lowered)
+    if not age_match:
+        age_match = re.search(r'(?:farmer|citizen|man|woman|person|applicant)\s*(?:of|aged|age)?\s*(\d{1,3})', lowered)
+    if not age_match:
+        age_match = re.search(r'\b(\d{1,2})\s*(?:yo|y/o)\b', lowered)
     if age_match:
         try:
             res["age"] = int(age_match.group(1))

@@ -1,11 +1,11 @@
 """Configuration module to load and validate environment variables."""
+import os
 from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
     """Validates and holds all application-wide configurations."""
-
 
     # Database & Redis Settings
     DATABASE_URL: str = "sqlite+aiosqlite:///welfare.db"
@@ -20,10 +20,12 @@ class Settings(BaseSettings):
     BHASHINI_USER_ID: str = "mock_user"
     BHASHINI_SOURCE_LANG: str = "hi"
     BHASHINI_PIPELINE_ID: str = "mock_pipeline"
-    GROQ_API_KEY: Optional[str] = None
-    OPENAI_API_KEY: Optional[str] = None
-    DIDIT_API_KEY: Optional[str] = None
-    DIDIT_CLIENT_ID: Optional[str] = None
+
+    # AI Model Keys (Loaded dynamically from environment variables or .env)
+    OPENAI_API_KEY: Optional[str] = os.getenv("OPENAI_API_KEY") or os.getenv("OPENAI_KEY")
+    GROQ_API_KEY: Optional[str] = os.getenv("GROQ_API_KEY") or os.getenv("GROQ_KEY")
+    DIDIT_API_KEY: Optional[str] = os.getenv("DIDIT_API_KEY")
+    DIDIT_CLIENT_ID: Optional[str] = os.getenv("DIDIT_CLIENT_ID")
 
     # Configuration source preference (.env file support)
     model_config = SettingsConfigDict(
