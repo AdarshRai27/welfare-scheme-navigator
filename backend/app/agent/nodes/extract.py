@@ -225,6 +225,24 @@ async def extract_profile_node(state: Dict[str, Any]) -> Dict[str, Any]:
     
     intent = intent_data.get("_intent", "SCHEME_QUERY")
     detected_lang = intent_data.get("_language")
+
+    # Domain Limitation Guardrail: Catch off-topic prompts deterministically
+    lowered_q = query.lower()
+    off_topic_indicators = [
+        "python", "javascript", "java", "c++", "html", "css", "code", "coding", "program", "function", "algorithm",
+        "cricket", "football", "ipl", "messi", "ronaldo", "virat", "dhoni", "match", "score",
+        "recipe", "cake", "biryani", "pizza", "burger", "cook", "cooking",
+        "movie", "actor", "actress", "song", "lyrics", "sing", "dance",
+        "weather", "temperature", "capital of", "president of", "prime minister of"
+    ]
+    scheme_indicators = [
+        "scheme", "yojana", "loan", "pension", "farmer", "kisan", "land", "income", "subsidy",
+        "scholarship", "aadhaar", "certificate", "bima", "insurance", "ration", "business",
+        "student", "female", "woman", "widow", "senior", "caste", "dukan", "mudra", "ayushman",
+        "योजना", "पेंशन", "किसान", "सब्सिडी", "ऋण", "लोन", "छात्रवृत्ति", "बीमा"
+    ]
+    if any(o in lowered_q for o in off_topic_indicators) and not any(s in lowered_q for s in scheme_indicators):
+        intent = "OFF_TOPIC"
     
     # Accurate language resolution
     is_hindi_script = any(2304 <= ord(c) <= 2431 for c in query)

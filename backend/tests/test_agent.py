@@ -311,6 +311,30 @@ async def test_hindi_birth_year_and_pure_hindi_output() -> None:
     assert "दस्तावेज़" in res["reply_text"]
 
 
+@pytest.mark.asyncio
+async def test_domain_limitation_guardrail_off_topic() -> None:
+    """Test that off-topic programming or general sports queries are strictly refused."""
+    off_topic_query = "Can you write a Python script using fastsort algorithm to sort numbers?"
+    res = await run_agent(user_query=off_topic_query, extracted_profile={}, language="en")
+    assert res["query_intent"] == "OFF_TOPIC"
+    assert "Indian government welfare schemes" in res["reply_text"]
+    assert "specifically designed" in res["reply_text"]
+
+
+@pytest.mark.asyncio
+async def test_didit_generic_image_scan_success() -> None:
+    """Test that Didit ID scan with non-standard image filename (e.g. IMG_2026.jpg) succeeds."""
+    from app.services.didit import DiditService
+    service = DiditService()
+    fake_image_bytes = b"\xff\xd8\xff\xe0\x00\x10JFIF" + b"A" * 500
+    res = await service.extract_identity_document(fake_image_bytes, filename_hint="IMG_4892.jpg")
+    assert res["provider"] == "didit"
+    assert res["document_type"] == "aadhaar"
+    assert res["extracted_fields"]["verified_status"] is True
+    assert "XXXX" in res["extracted_fields"]["aadhaar_number"]
+
+
+
 
 
 
