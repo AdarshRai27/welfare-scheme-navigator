@@ -64,8 +64,9 @@ class OCRService:
         raw_text = ""
         provider_used = "none"
 
-        # 1. Try OpenAI GPT-4o-mini Vision OCR if configured
-        if settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("mock"):
+        # 1. Try OpenAI GPT-4o-mini Vision OCR if configured (using OPEN_AI_OCR key)
+        openai_key = settings.OPEN_AI_OCR or settings.OPENAI_API_KEY
+        if openai_key and not openai_key.startswith("mock"):
             raw_text, provider_used = await self._run_openai_vision_ocr(image_bytes)
 
         # 2. Try API4AI OCR Cloud Engine (Primary Dedicated OCR)
@@ -117,8 +118,9 @@ class OCRService:
             import base64
             b64_img = base64.b64encode(image_bytes).decode("utf-8")
             url = "https://api.openai.com/v1/chat/completions"
+            openai_key = settings.OPEN_AI_OCR or settings.OPENAI_API_KEY
             headers = {
-                "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
+                "Authorization": f"Bearer {openai_key}",
                 "Content-Type": "application/json",
             }
             prompt = (

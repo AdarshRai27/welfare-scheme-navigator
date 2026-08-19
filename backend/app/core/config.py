@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     DIDIT_CLIENT_ID: Optional[str] = os.getenv("DIDIT_CLIENT_ID")
 
     # Dedicated OCR Engine API Keys
+    OPEN_AI_OCR: Optional[str] = os.getenv("OPEN_AI_OCR") or os.getenv("OPENAI_OCR_KEY") or os.getenv("OPENAI_API_KEY")
     API4AI_API_KEY: Optional[str] = os.getenv("API4AI_API_KEY", "a4a-hrczgMEhktuNNCctwj4xC79acGEAKqAn")
     GOOGLE_VISION_API_KEY: Optional[str] = os.getenv("GOOGLE_VISION_API_KEY")
     OCR_SPACE_API_KEY: Optional[str] = os.getenv("OCR_SPACE_API_KEY")
