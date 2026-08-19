@@ -9,11 +9,12 @@ logger = logging.getLogger(__name__)
 PROFILE_EXTRACTION_PROMPT = """
 You are an intent classification and demographic extraction engine for "Sarkari Sahayak", an Indian government welfare schemes assistant.
 
-First, classify the user query into ONE of these 4 intents:
+Classify the user query into ONE of these 5 intents:
 1. "META_LANGUAGE_COMMAND": The user wants to change or specify response language (e.g., "answer in hindi", "speak in english", "hinglish me bolo").
 2. "GENERAL_GREETING": Greetings or general questions about what you do (e.g., "hi", "hello", "namaste", "who are you", "what can you do").
 3. "OFF_TOPIC": Questions unrelated to Indian government welfare schemes (e.g. coding, sports, recipes, jokes, general knowledge).
-4. "SCHEME_QUERY": Questions seeking welfare schemes, loans, pensions, subsidies, scholarships, or sharing personal profile details (age, income, land, state, Aadhaar).
+4. "INSUFFICIENT_INFORMATION": The user asks for a scheme or money in general (e.g. "I want scheme", "tell me a scheme", "give money", "what scheme is for me") without providing minimal criteria (no age, no state, no income, no category).
+5. "SCHEME_QUERY": Specific questions seeking welfare schemes with citizen profile parameters (age, income, land, state, occupation/category) or naming specific schemes.
 
 Also detect target language: "hi" (Hindi in Devanagari), "en" (English), or "hinglish" (Hindi typed in Roman/English script).
 
@@ -37,47 +38,41 @@ Analyze the user's query: "{query}"
 Intent: {intent}
 Preferred language: {language}
 
-CRITICAL REASONING & FORMATTING RULES:
-1. Language matching:
-   - If language is "hi", write the ENTIRE response in pure Hindi (Devanagari script).
-   - If language is "hinglish", write in conversational Hinglish (Hindi written in Roman/English script).
-   - If language is "en", write in clear, professional English.
+CRITICAL REASONING & STRICT PROHIBITION RULES:
+1. Strict Answering Policy (No Placeholders, No Default Scheme Dumping):
+   - If Intent is "INSUFFICIENT_INFORMATION" or if the query lacks minimal criteria (Age, State, Category, Income/Land), DO NOT dump a generic list of schemes.
+   - Apologize for being unable to evaluate eligibility without details, and specifically request the missing parameters:
+     * Age / DOB
+     * State of Residence / Domicile
+     * Category / Occupation (e.g., Farmer, Student, Senior Citizen, Business, Woman)
+     * Annual Family Income (₹)
+     * Landholding Size (Acres/Hectares, if farmer)
 
-2. Ineligibility Handling:
-   - If no schemes qualify, respond ONLY with:
+2. Strict Ineligibility Handling:
+   - If criteria were provided but no schemes in the database qualify, respond ONLY with:
      * English: "You are not eligible for any schemes in our current database, but we are expanding our database as we speak. Please visit again soon!"
      * Hindi: "वर्तमान में आप हमारे डेटाबेस की किसी योजना के लिए पात्र नहीं हैं, लेकिन हम लगातार नई योजनाएं जोड़ रहे हैं। कृपया जल्द ही पुनः संपर्क करें!"
      * Hinglish: "Aap hamare current database ki kisi scheme ke liye eligible nahi hain, lekin hum actively new schemes add kar rahe hain. Kripya jald hi dubara visit karein!"
 
-3. When Qualified Schemes Exist, structure in clean, scannable BULLET POINTS (• and -):
+3. Language Matching:
+   - If language is "hi", write the ENTIRE response in pure Hindi (Devanagari script).
+   - If language is "hinglish", write in conversational Hinglish (Hindi in Roman script).
+   - If language is "en", write in clear, professional English.
+
+4. When Qualified Schemes Exist, structure in clean, scannable BULLET POINTS (• and -):
    • **[Scheme Name]**
      - **Beneficiary / Target**: [e.g. Primary Applicant (Age X) / Household / Senior Citizen]
      - **Category & Ministry**: [Category] • [Issuing Body]
-     - **Key Benefits**: [Concise benefit explanation, including amounts like ₹6,000/yr, ₹5 Lakh cover, ₹3,000/mo pension]
+     - **Key Benefits**: [Concise benefit explanation, e.g. ₹6,000/yr, ₹5 Lakh cover, ₹3,000/mo pension]
      - **Eligibility**: [Exact matching criteria: age, income limit, land size, state domicile]
      - **Required Documents**: [e.g. Aadhaar Card, Land Revenue Record (Khatauni), Bank Passbook]
      - **Official Portal**: [Visit Official Portal]([source_url])
 
-4. Household & Family Context:
-   - If multiple family members were mentioned (e.g. spouse, children), clearly highlight which scheme applies to the primary applicant, spouse, or whole household (e.g. Ayushman Bharat for family health).
-
-5. Transparent Disqualification Alternatives:
-   - If the user specifically asked for a scheme that is disqualified due to age or income (e.g. PM-KMY), briefly explain why and point to the qualified alternative (e.g. PM-Kisan or Old Age Pension).
-
-6. Suggested Related Schemes:
-   • **Related Welfare Schemes to Explore:**
-     - **[Scheme 1]** — [Brief benefit] • [Official Portal]([source_url])
-     - **[Scheme 2]** — [Brief benefit] • [Official Portal]([source_url])
-
-7. Domain Limitation Guardrail (Strict Refusal for Non-Scheme Topics):
-   - If Intent is "OFF_TOPIC" (e.g. coding, math, sports, recipes, jokes, general knowledge, movies), DO NOT answer the non-scheme question. POLITELY REFUSE and state that you only assist with Indian central and state welfare schemes:
+5. Domain Limitation Guardrail (Strict Refusal for Non-Scheme Topics):
+   - If Intent is "OFF_TOPIC" (e.g. coding, math, sports, recipes, jokes, general knowledge), POLITELY REFUSE:
      * English: "I apologize, but I am specifically designed to assist exclusively with Indian government welfare schemes, benefits, and eligibility criteria (such as pensions, farmer subsidies, business loans, health insurance, and scholarships). Please ask a question related to government schemes."
      * Hindi: "क्षमा करें! मैं केवल भारत सरकार और राज्य सरकारों की कल्याणकारी योजनाओं (जैसे पेंशन, किसान लाभ, बिजनेस लोन, छात्रवृत्ति, स्वास्थ्य बीमा) से संबंधित प्रश्नों के उत्तर देने के लिए तैयार किया गया हूँ। कृपया सरकारी योजनाओं से संबंधित प्रश्न पूछें।"
      * Hinglish: "Kshama karein! Main sirf Indian government welfare schemes (jaise pension, kisan labh, business loan, scholarship, health insurance) se related questions ke answers dene ke liye designed hoon. Kripya government schemes se related question poochein."
-
-8. Greetings & Meta Commands:
-   - If Intent is "GENERAL_GREETING", warmly welcome the user and explain you cover 125+ central & state welfare schemes.
-   - If Intent is "META_LANGUAGE_COMMAND", acknowledge the language preference change politely.
 
 Profile details: {profile}
 Eligible schemes: {eligible}
@@ -188,6 +183,42 @@ def simulate_llm_call(prompt_type: str, variables: Dict[str, Any]) -> str:
                 return "Kshama karein! Main sirf Indian government welfare schemes (jaise pension, kisan labh, business loan, scholarship) aur unki eligibility check karne ke liye hi designed hoon. Kripya welfare schemes se related question poochein."
             else:
                 return "I apologize, but I am specifically designed to assist only with Indian government welfare schemes, benefits, and eligibility checks (such as pensions, farmer subsidies, business loans, and scholarships). Please ask a question related to government schemes."
+
+        # Handle Insufficient Information Queries (Strict Answering Policy)
+        if intent == "INSUFFICIENT_INFORMATION":
+            if lang == "hi":
+                return (
+                    "क्षमा करें! आपके प्रश्न में आवश्यक विवरण उपलब्ध न होने के कारण मैं आपकी पात्रता की जांच नहीं कर पा रहा हूँ।\n\n"
+                    "आपके लिए उपयुक्त सरकारी योजनाएं खोजने हेतु कृपया निम्नलिखित जानकारी प्रदान करें:\n"
+                    "• **आपकी आयु (उम्र) या जन्म वर्ष**\n"
+                    "• **आपका राज्य / निवास स्थान**\n"
+                    "• **आपकी श्रेणी / पेशा** (उदा: किसान, छात्र, वरिष्ठ नागरिक, महिला या छोटा व्यापारी)\n"
+                    "• **वार्षिक पारिवारिक आय** (उदा: ₹1.5 लाख)\n"
+                    "• **भूमि का रकबा** (एकड़ या हेक्टेयर में, यदि आप किसान हैं)\n\n"
+                    "अथवा आप अपने आधार कार्ड या आय प्रमाण पत्र की फ़ोटो अपलोड कर सकते हैं।"
+                )
+            elif lang == "hinglish":
+                return (
+                    "Kshama karein! Aapke question me zaroori details na hone ke karan main aapki eligibility check nahi kar pa raha hoon.\n\n"
+                    "Sahi schemes dhoondhne ke liye kripya ye information provide karein:\n"
+                    "• **Aapki Age ya Birth Year**\n"
+                    "• **State / Domicile**\n"
+                    "• **Category / Occupation** (jaise Farmer, Student, Senior Citizen, Women ya Small Business)\n"
+                    "• **Annual Family Income** (e.g. ₹1.5 Lakh)\n"
+                    "• **Land Size** (Acres ya Hectares me, agar aap kisan hain)\n\n"
+                    "Ya phir aap apna Aadhaar card ya Income certificate scan karein."
+                )
+            else:
+                return (
+                    "I apologize, but I am unable to determine your eligibility yet as your query lacks the necessary citizen details.\n\n"
+                    "To help you find the right government welfare schemes, please provide:\n"
+                    "• **Your Age or Date of Birth**\n"
+                    "• **State of Residence / Domicile**\n"
+                    "• **Category / Occupation** (e.g., Farmer, Student, Senior Citizen, Small Business, or Woman)\n"
+                    "• **Annual Family Income** (e.g. ₹1.5 Lakh)\n"
+                    "• **Landholding Size** (in Acres or Hectares, if a farmer)\n\n"
+                    "Alternatively, you can upload a photo of your Aadhaar Card, Income Certificate, or Land Record."
+                )
 
         # Helper to format eligibility rules cleanly
         def format_rules(r):

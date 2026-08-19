@@ -64,11 +64,15 @@ class OCRService:
         raw_text = ""
         provider_used = "none"
 
-        # 1. Try API4AI OCR Cloud Engine (Primary Dedicated OCR)
-        if settings.API4AI_API_KEY and not settings.API4AI_API_KEY.startswith("mock"):
+        # 1. Try OpenAI GPT-4o-mini Vision OCR if configured
+        if settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("mock"):
+            raw_text, provider_used = await self._run_openai_vision_ocr(image_bytes)
+
+        # 2. Try API4AI OCR Cloud Engine (Primary Dedicated OCR)
+        if not raw_text and settings.API4AI_API_KEY and not settings.API4AI_API_KEY.startswith("mock"):
             raw_text, provider_used = await self._run_api4ai_ocr(image_bytes)
 
-        # 2. Try Google Cloud Vision API if API key provided
+        # 3. Try Google Cloud Vision API if API key provided
         if not raw_text and settings.GOOGLE_VISION_API_KEY and not settings.GOOGLE_VISION_API_KEY.startswith("mock"):
             raw_text, provider_used = await self._run_google_vision_ocr(image_bytes)
 
@@ -106,6 +110,48 @@ class OCRService:
             "provider": provider_used,
             "success": bool(extracted_fields),
         }
+
+    async def _run_openai_vision_ocr(self, image_bytes: bytes) -> Tuple[str, str]:
+        """Calls OpenAI GPT-4o-mini Vision API to extract text from Indian government documents."""
+        try:
+            import base64
+            b64_img = base64.b64encode(image_bytes).decode("utf-8")
+            url = "https://api.openai.com/v1/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
+                "Content-Type": "application/json",
+            }
+            prompt = (
+                "Transcribe all text from this Indian government document (Aadhaar Card, Income Certificate, or Land Record / Khatauni) verbatim. "
+                "Include all names, dates of birth, 12-digit Aadhaar numbers, income amounts, land area/hectares/acres, and states. "
+                "Output plain text only without any explanations."
+            )
+            payload = {
+                "model": "gpt-4o-mini",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": prompt},
+                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{b64_img}"}},
+                        ],
+                    }
+                ],
+                "temperature": 0.1,
+            }
+            async with httpx.AsyncClient(timeout=25.0) as client:
+                res = await client.post(url, json=payload, headers=headers)
+                if res.status_code == 200:
+                    data = res.json()
+                    content = data["choices"][0]["message"]["content"].strip()
+                    if content:
+                        logger.info(f"[OCR] OpenAI Vision extracted {len(content)} chars")
+                        return content, "openai_vision"
+                else:
+                    logger.warning(f"[OCR] OpenAI Vision error ({res.status_code}): {res.text}")
+        except Exception as err:
+            logger.warning(f"[OCR] OpenAI Vision request error: {err}")
+        return "", "openai_vision_failed"
 
     async def _run_api4ai_ocr(self, image_bytes: bytes) -> Tuple[str, str]:
         """Calls api4ai OCR Cloud API for high-precision document character recognition."""

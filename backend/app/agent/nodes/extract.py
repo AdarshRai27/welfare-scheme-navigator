@@ -265,6 +265,29 @@ async def extract_profile_node(state: Dict[str, Any]) -> Dict[str, Any]:
             if key not in profile or profile[key] is None:
                 profile[key] = val
 
+    # Strict Minimum Requirements Check:
+    # If the user asks for schemes generally without providing ANY citizen criteria, mark INSUFFICIENT_INFORMATION
+    if intent == "SCHEME_QUERY":
+        has_min_profile = any([
+            profile.get("age") is not None,
+            profile.get("annual_income") is not None,
+            profile.get("land_size_hectares") is not None,
+            profile.get("state") is not None,
+            profile.get("gender") is not None,
+            profile.get("caste_category") is not None,
+            profile.get("has_student") is True,
+            profile.get("is_farmer") is True,
+            profile.get("is_senior") is True,
+            profile.get("is_business") is True,
+        ])
+        mentions_specific_scheme = any(k in lowered_q for k in [
+            "pm kisan", "pm-kisan", "mudra", "ayushman", "pmfby", "fasal bima", "kcc", "kisan credit",
+            "surya ghar", "awas", "pmay", "pension", "scholarship", "sukanya", "ladli", "vishwakarma"
+        ])
+        # Vague/general queries like "tell me schemes", "give money", "what scheme for me" without details
+        if not has_min_profile and not mentions_specific_scheme and len(query.strip().split()) <= 15:
+            intent = "INSUFFICIENT_INFORMATION"
+
     logger.info(
         f"[AGENT extract_profile] Intent: {intent} | Language: {resolved_lang} | Profile: {profile}"
     )
