@@ -341,15 +341,16 @@
                             <button onclick="triggerFile('fileAudio')" class="px-3 py-1.5 rounded-lg bg-white hover:bg-cream-50 text-espresso-800 text-xs font-semibold border border-cream-300 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
                                 <i class="fa-solid fa-microphone text-warm-terracotta"></i> <span data-i18n="action_voice">Voice Note</span>
                             </button>
-                            <button onclick="triggerFile('fileDidit')" class="px-3 py-1.5 rounded-lg bg-white hover:bg-cream-50 text-espresso-800 text-xs font-semibold border border-cream-300 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
-                                <i class="fa-solid fa-address-card text-indigo-600"></i> <span>Didit ID Scan</span>
+                            <button onclick="triggerFile('fileAadhaar')" class="px-3 py-1.5 rounded-lg bg-white hover:bg-cream-50 text-espresso-800 text-xs font-semibold border border-cream-300 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
+                                <i class="fa-solid fa-address-card text-indigo-600"></i> <span data-i18n="action_aadhaar">Aadhaar Card Scan</span>
                             </button>
-                            <button onclick="triggerDiditOAuth()" class="px-3 py-1.5 rounded-lg bg-white hover:bg-cream-50 text-espresso-800 text-xs font-semibold border border-cream-300 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
-                                <i class="fa-solid fa-bolt text-amber-500"></i> <span>⚡ 1-Click Didit (No Image)</span>
+                            <button onclick="triggerFile('fileDoc')" class="px-3 py-1.5 rounded-lg bg-white hover:bg-cream-50 text-espresso-800 text-xs font-semibold border border-cream-300 shadow-sm flex items-center gap-1.5 whitespace-nowrap">
+                                <i class="fa-solid fa-file-invoice-dollar text-emerald-600"></i> <span data-i18n="action_income">Income / Land Record Scan</span>
                             </button>
 
                             <input type="file" id="fileAudio" accept="audio/*,video/*" class="hidden" onchange="handleFileUpload(this, 'audio')">
-                            <input type="file" id="fileDidit" accept="image/*" class="hidden" onchange="handleFileUpload(this, 'didit')">
+                            <input type="file" id="fileAadhaar" accept="image/*" class="hidden" onchange="handleFileUpload(this, 'aadhaar')">
+                            <input type="file" id="fileDoc" accept="image/*,.pdf" class="hidden" onchange="handleFileUpload(this, 'doc')">
                         </div>
 
                         <form id="inputForm" onsubmit="handleSend(event)" class="flex items-center gap-2">
@@ -789,7 +790,11 @@
             const file = inputEl.files[0];
             if (!file) return;
 
-            const iconMap = { audio: '🎤 Voice Note', didit: '🪪 Didit ID Scan' };
+            const iconMap = {
+                audio: '🎤 Voice Note',
+                aadhaar: '🪪 Aadhaar / ID Card',
+                doc: '📄 Income / Land Record'
+            };
             appendUserMessage(`Uploaded ${iconMap[type] || 'Document'}: ${file.name}`);
 
             const formData = new FormData();
@@ -797,9 +802,15 @@
             formData.append("file", file);
             formData.append("language", currentLang);
 
-            const endpoint = type === 'didit' ? `${BASE_URL}/webhook/didit/scan` : `${BASE_URL}/webhook/web/message`;
+            let endpoint = `${BASE_URL}/webhook/web/message`;
             if (type === 'audio') {
                 formData.append("message_type", "audio");
+            } else if (type === 'aadhaar') {
+                endpoint = `${BASE_URL}/webhook/ocr/scan`;
+                formData.append("document_type", "aadhaar");
+            } else if (type === 'doc') {
+                endpoint = `${BASE_URL}/webhook/ocr/scan`;
+                formData.append("document_type", "income_or_land");
             }
 
             try {

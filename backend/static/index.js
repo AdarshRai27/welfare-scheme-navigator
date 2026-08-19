@@ -151,16 +151,26 @@ async function handleFileUpload(inputEl, type) {
     const file = inputEl.files[0];
     if (!file) return;
 
-    const iconMap = { audio: '🎤 Voice Note', didit: '🪪 Didit ID Scan' };
+    const iconMap = {
+        audio: '🎤 Voice Note',
+        aadhaar: '🪪 Aadhaar / ID Card',
+        doc: '📄 Income / Land Record'
+    };
     addMessage("user", `Uploaded ${iconMap[type] || 'Document'}: ${file.name}`);
 
     const formData = new FormData();
     formData.append("phone", PHONE_NUMBER);
     formData.append("file", file);
 
-    const endpoint = type === 'didit' ? `${BASE_URL}/webhook/didit/scan` : `${BASE_URL}/webhook/web/message`;
+    let endpoint = `${BASE_URL}/webhook/web/message`;
     if (type === 'audio') {
         formData.append("message_type", "audio");
+    } else if (type === 'aadhaar') {
+        endpoint = `${BASE_URL}/webhook/ocr/scan`;
+        formData.append("document_type", "aadhaar");
+    } else if (type === 'doc') {
+        endpoint = `${BASE_URL}/webhook/ocr/scan`;
+        formData.append("document_type", "income_or_land");
     }
 
     try {

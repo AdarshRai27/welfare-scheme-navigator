@@ -183,13 +183,15 @@ async def handle_web_message(
     }
 
 
+@router.post("/ocr/scan")
 @router.post("/didit/scan")
-async def handle_didit_id_scan(
+async def handle_ocr_scan(
     phone: str = Form("919999999999"),
     language: Optional[str] = Form(None),
+    document_type: str = Form("auto"),
     file: Optional[UploadFile] = File(None),
 ) -> Dict[str, Any]:
-    """Processes ID document scanning via Didit Protocol OCR service."""
+    """Processes conventional document OCR for Aadhaar Cards, Income Certificates, and Land Records."""
     session = await session_manager.get_session(phone)
     if not session:
         session = {"whatsapp_id": phone, "preferred_language": language or "en", "extracted_profile": {}}
@@ -198,17 +200,18 @@ async def handle_didit_id_scan(
 
     active_lang = language or session.get("preferred_language", "en")
 
-    file_bytes = b"MOCK_DIDIT_AADHAAR_BYTES"
+    file_bytes = b"MOCK_DOCUMENT_BYTES"
     filename_hint = "aadhaar"
     if file:
         file_bytes = await file.read()
         filename_hint = file.filename or "aadhaar"
 
-    # Run Didit Document Scan
-    didit_res = await didit_service.extract_identity_document(file_bytes, filename_hint)
-    extracted_fields = didit_res.get("extracted_fields", {})
+    # Run Conventional Document OCR Scan
+    ocr_res = await ocr_service.extract_document_data(file_bytes, filename_hint, document_type)
+    extracted_fields = ocr_res.get("extracted_fields", {})
+    doc_type = ocr_res.get("document_type", "document")
 
-    # Check if OCR / Didit failed to extract meaningful fields
+    # Check if OCR extracted meaningful fields
     valid_fields = {k: v for k, v in extracted_fields.items() if v and v != "Not Extracted"}
     if not valid_fields:
         err_msg = (
@@ -218,7 +221,7 @@ async def handle_didit_id_scan(
         )
         return {
             "status": "unreadable",
-            "provider": didit_res.get("provider", "didit"),
+            "provider": "conventional_ocr",
             "reply_text": err_msg,
             "session": session,
         }
@@ -227,18 +230,40 @@ async def handle_didit_id_scan(
     session.setdefault("extracted_profile", {}).update(valid_fields)
     await session_manager.save_session(phone, session)
 
-    # Construct personalized semantic trigger query
-    v_name = valid_fields.get("name", "Citizen")
-    v_aadhaar = valid_fields.get("aadhaar_number", "XXXX-XXXX-8921")
-    v_state = valid_fields.get("state") or session["extracted_profile"].get("state") or "India"
-    v_age = valid_fields.get("age") or session["extracted_profile"].get("age")
-    v_gender = valid_fields.get("gender") or session["extracted_profile"].get("gender")
+    # Build clear verified document badge
+    v_name = session["extracted_profile"].get("name", "Citizen")
+    v_aadhaar = session["extracted_profile"].get("aadhaar_number")
+    v_income = session["extracted_profile"].get("annual_income")
+    v_land = session["extracted_profile"].get("land_size_hectares")
+    v_state = session["extracted_profile"].get("state", "India")
+    v_age = session["extracted_profile"].get("age")
+    v_gender = session["extracted_profile"].get("gender")
 
+    if doc_type == "income_certificate" or (v_income and "income" in filename_hint.lower()):
+        badge_header = {
+            "hi": f"📄 **आय प्रमाण पत्र सत्यापन:**\n• **नाम**: {v_name}\n• **सत्यापित वार्षिक आय**: ₹{v_income:,}\n• **राज्य**: {v_state}\n\n",
+            "hinglish": f"📄 **Income Certificate Verified:**\n• **Name**: {v_name}\n• **Annual Income**: ₹{v_income:,}\n• **State**: {v_state}\n\n",
+            "en": f"📄 **Income Certificate Verified:**\n• **Name**: {v_name}\n• **Annual Income**: ₹{v_income:,}\n• **State**: {v_state}\n\n",
+        }.get(active_lang, f"📄 **Income Certificate Verified:**\n• **Name**: {v_name}\n• **Annual Income**: ₹{v_income:,}\n• **State**: {v_state}\n\n")
+    elif doc_type == "land_record" or (v_land and ("land" in filename_hint.lower() or "khatauni" in filename_hint.lower())):
+        badge_header = {
+            "hi": f"🌾 **भू-अभिलेख (खतौनी) सत्यापन:**\n• **खातेदार का नाम**: {v_name}\n• **सत्यापित भूमि**: {v_land} हेक्टेयर\n• **राज्य**: {v_state}\n\n",
+            "hinglish": f"🌾 **Land Record (Khatauni) Verified:**\n• **Owner Name**: {v_name}\n• **Landholding**: {v_land} Hectares\n• **State**: {v_state}\n\n",
+            "en": f"🌾 **Land Record (Khatauni) Verified:**\n• **Owner Name**: {v_name}\n• **Landholding**: {v_land} Hectares\n• **State**: {v_state}\n\n",
+        }.get(active_lang, f"🌾 **Land Record (Khatauni) Verified:**\n• **Owner Name**: {v_name}\n• **Landholding**: {v_land} Hectares\n• **State**: {v_state}\n\n")
+    else:
+        badge_header = {
+            "hi": f"🪪 **पहचान पत्र (आधार) सत्यापन:**\n• **नाम**: {v_name}\n• **पहचान संख्या**: `{v_aadhaar or 'XXXX-XXXX-8921'}`\n• **राज्य**: {v_state}" + (f"\n• **आयु**: {v_age} वर्ष" if v_age else "") + "\n\n",
+            "hinglish": f"🪪 **Identity Document Verified:**\n• **Name**: {v_name}\n• **ID Number**: `{v_aadhaar or 'XXXX-XXXX-8921'}`\n• **State**: {v_state}" + (f"\n• **Age**: {v_age} years" if v_age else "") + "\n\n",
+            "en": f"🪪 **Identity Document Verified:**\n• **Name**: {v_name}\n• **ID Number**: `{v_aadhaar or 'XXXX-XXXX-8921'}`\n• **State**: {v_state}" + (f"\n• **Age**: {v_age} years old" if v_age else "") + "\n\n",
+        }.get(active_lang, f"🪪 **Identity Document Verified:**\n• **Name**: {v_name}\n• **ID Number**: `{v_aadhaar or 'XXXX-XXXX-8921'}`\n• **State**: {v_state}\n\n")
+
+    # Run LangGraph reasoning workflow with updated citizen profile
     age_clause = f", age {v_age}" if v_age else ""
     gender_clause = f", {v_gender}" if v_gender else ""
     semantic_query = (
         f"I am {v_name}{age_clause}{gender_clause} from {v_state}. "
-        f"What government welfare schemes can I apply for with my verified citizen profile?"
+        f"What government welfare schemes can I apply for with my verified profile?"
     )
 
     result = await run_agent(semantic_query, session["extracted_profile"], language=active_lang)
@@ -247,41 +272,11 @@ async def handle_didit_id_scan(
     session["suggested_schemes"] = result.get("suggested_schemes", [])
     await session_manager.save_session(phone, session)
 
-    if active_lang == "hi":
-        id_badge = (
-            f"🪪 **डिडिट प्रोटोकॉल द्वारा सत्यापित पहचान:**\n"
-            f"• **नाम**: {v_name}\n"
-            f"• **आधार संख्या**: `{v_aadhaar}`\n"
-            f"• **राज्य**: {v_state}"
-            + (f"\n• **आयु**: {v_age} वर्ष" if v_age else "")
-            + (f"\n• **लिंग**: {v_gender}" if v_gender else "")
-            + "\n\n"
-        )
-    elif active_lang == "hinglish":
-        id_badge = (
-            f"🪪 **Didit Protocol Verified Identity:**\n"
-            f"• **Name**: {v_name}\n"
-            f"• **Aadhaar Number**: `{v_aadhaar}`\n"
-            f"• **State**: {v_state}"
-            + (f"\n• **Age**: {v_age} years" if v_age else "")
-            + (f"\n• **Gender**: {v_gender}" if v_gender else "")
-            + "\n\n"
-        )
-    else:
-        id_badge = (
-            f"🪪 **Didit Verified Identity Document:**\n"
-            f"• **Name**: {v_name}\n"
-            f"• **Aadhaar Number**: `{v_aadhaar}`\n"
-            f"• **State / Domicile**: {v_state}"
-            + (f"\n• **Age**: {v_age} years old" if v_age else "")
-            + (f"\n• **Gender**: {v_gender}" if v_gender else "")
-            + "\n\n"
-        )
-
     return {
         "status": "success",
-        "provider": didit_res.get("provider", "didit"),
-        "reply_text": f"{id_badge}{result.get('reply_text', '')}",
+        "provider": "conventional_ocr",
+        "document_type": doc_type,
+        "reply_text": f"{badge_header}{result.get('reply_text', '')}",
         "session": session,
     }
 
