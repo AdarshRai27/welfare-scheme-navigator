@@ -43,6 +43,54 @@ INDIAN_STATES = {
 }
 
 
+# 8 Core Welfare Domain Pillars (Domain Whitelist)
+WELFARE_DOMAIN_TAXONOMY = {
+    "agriculture": [
+        "kisan", "farmer", "agriculture", "crop", "fasal", "kheti", "seed", "fertilizer", "soil", "tractor", "machinery",
+        "irrigation", "sinchayee", "drip", "sprinkler", "dairy", "pashupalan", "animal husbandry", "fisheries", "matsya",
+        "kcc", "kisan credit", "pm-kisan", "pmkisan", "pmfby", "fasal bima", "krishi", "कृषि", "किसान", "फसल", "खेती"
+    ],
+    "social_security": [
+        "pension", "old age", "vridha", "senior citizen", "widow", "divyang", "disability", "social security",
+        "ignaps", "atal pension", "apy", "shramik", "unorganized worker", "पेंशन", "वृद्धावस्था", "विधवा", "दिव्यांग"
+    ],
+    "healthcare": [
+        "health", "medical", "hospital", "doctor", "treatment", "ayushman", "pmjay", "jan arogya", "bima", "insurance",
+        "maternity", "matru vandana", "pmmvy", "jan aushadhi", "medicine", "स्वास्थ्य", "इलाज", "अस्पताल", "आयुष्मान"
+    ],
+    "livelihood_loans": [
+        "loan", "credit", "mudra", "svanidhi", "street vendor", "shop", "dukan", "business", "vyapar", "startup",
+        "pmegp", "standup india", "vishwakarma", "artisan", "karigar", "self help group", "shg", "लोन", "ऋण", "व्यापार", "दुकान"
+    ],
+    "education_skills": [
+        "scholarship", "student", "school", "college", "education", "padhai", "pmkvy", "skill", "training",
+        "pre-matric", "post-matric", "vidyarthi", "छात्रवृत्ति", "छात्र", "शिक्षा", "पढ़ाई", "कौशल"
+    ],
+    "housing_energy": [
+        "awas", "housing", "pmay", "ghar", "makaan", "solar", "surya ghar", "electricity", "bijli", "lpg", "gas", "ujjwala",
+        "आवास", "घर", "मकान", "सोलर", "बिजली", "उज्ज्वला"
+    ],
+    "women_child": [
+        "women", "mahila", "girl child", "beti", "sukanya", "samriddhi", "ladli behna", "matru", "widow", "mahila samman",
+        "महिला", "बेटी", "सुकन्या", "लाडली"
+    ],
+    "citizen_profile_params": [
+        "scheme", "yojana", "eligibility", "benefit", "apply", "portal", "subsidy", "aadhaar", "income", "land",
+        "hectare", "acre", "state", "domicile", "caste", "rashan", "ration", "khatauni", "certificate",
+        "आधार", "आय", "रकबा", "जमीन", "भूमि", "राशन", "खतौनी", "जाति", "निवास", "पात्रता", "योजना"
+    ]
+}
+
+
+def is_in_welfare_domain(query: str) -> bool:
+    """Checks if query touches any of the 8 Indian Welfare Domain Pillars."""
+    lowered = query.lower()
+    for pillar, terms in WELFARE_DOMAIN_TAXONOMY.items():
+        if any(term in lowered for term in terms):
+            return True
+    return False
+
+
 def extract_demographics_from_text(text: str) -> Dict[str, Any]:
     """Deterministic NLP entity extractor for age, income, land, and state from user prompt."""
     lowered = text.lower()
@@ -269,8 +317,7 @@ async def extract_profile_node(state: Dict[str, Any]) -> Dict[str, Any]:
             if key not in profile or profile[key] is None:
                 profile[key] = val
 
-    # Strict Minimum Requirements Check:
-    # If the user asks for schemes generally without providing ANY citizen criteria, mark INSUFFICIENT_INFORMATION
+    # Strict Minimum Requirements & Domain Boundary Check:
     if intent == "SCHEME_QUERY":
         has_min_profile = any([
             profile.get("age") is not None,
@@ -284,12 +331,15 @@ async def extract_profile_node(state: Dict[str, Any]) -> Dict[str, Any]:
             profile.get("is_senior") is True,
             profile.get("is_business") is True,
         ])
+        in_domain = is_in_welfare_domain(query)
         mentions_specific_scheme = any(k in lowered_q for k in [
             "pm kisan", "pm-kisan", "mudra", "ayushman", "pmfby", "fasal bima", "kcc", "kisan credit",
             "surya ghar", "awas", "pmay", "pension", "scholarship", "sukanya", "ladli", "vishwakarma"
         ])
-        # Vague/general queries like "tell me schemes", "give money", "what scheme for me" without details
-        if not has_min_profile and not mentions_specific_scheme and len(query.strip().split()) <= 15:
+
+        if not in_domain and not has_min_profile and not mentions_specific_scheme:
+            intent = "OFF_TOPIC"
+        elif not has_min_profile and not mentions_specific_scheme and len(query.strip().split()) <= 15:
             intent = "INSUFFICIENT_INFORMATION"
 
     logger.info(
