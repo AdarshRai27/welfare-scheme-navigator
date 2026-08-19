@@ -27,6 +27,13 @@ class Settings(BaseSettings):
     DIDIT_API_KEY: Optional[str] = os.getenv("DIDIT_API_KEY")
     DIDIT_CLIENT_ID: Optional[str] = os.getenv("DIDIT_CLIENT_ID")
 
+    # Dedicated OCR Engine API Keys
+    GOOGLE_VISION_API_KEY: Optional[str] = os.getenv("GOOGLE_VISION_API_KEY")
+    OCR_SPACE_API_KEY: Optional[str] = os.getenv("OCR_SPACE_API_KEY", "K87899142388957")
+    AZURE_OCR_KEY: Optional[str] = os.getenv("AZURE_OCR_KEY")
+    AZURE_OCR_ENDPOINT: Optional[str] = os.getenv("AZURE_OCR_ENDPOINT")
+    BHASHINI_OCR_KEY: Optional[str] = os.getenv("BHASHINI_OCR_KEY")
+
     # Configuration source preference (.env file support)
     model_config = SettingsConfigDict(
         env_file=".env",

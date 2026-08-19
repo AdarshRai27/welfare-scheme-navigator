@@ -214,14 +214,30 @@ async def handle_ocr_scan(
     # Check if OCR extracted meaningful fields
     valid_fields = {k: v for k, v in extracted_fields.items() if v and v != "Not Extracted"}
     if not valid_fields:
-        err_msg = (
-            "⚠️ **दस्तावेज़ पढ़ने में असमर्थ:**\nआपके दस्तावेज़ की फोटो से विवरण स्पष्ट रूप से नहीं पढ़े जा सके। कृपया सुनिश्चित करें कि फोटो साफ़, धुंधली रहित और अच्छी रोशनी में ली गई हो, फिर पुनः प्रयास करें।"
-            if active_lang == "hi"
-            else "⚠️ **Document Scan Unreadable:**\nCould not clearly read details from your document photo. Please ensure the photo is well-lit, sharp, and not blurry, then try again."
-        )
+        if active_lang == "hi":
+            err_msg = (
+                "⚠️ **दस्तावेज़ पढ़ने में असमर्थ (OCR Unreadable):**\n\n"
+                "अपलोड की गई फोटो से आवश्यक विवरण (जैसे आधार संख्या, नाम, आय या भूमि का रकबा) स्पष्ट रूप से नहीं पढ़े जा सके।\n\n"
+                "• कृपया सुनिश्चित करें कि दस्तावेज़ की फोटो सीधी, साफ़ और पर्याप्त रोशनी में ली गई हो।\n"
+                "• अथवा आप सीधे चैट में अपनी जानकारी लिख सकते हैं (उदा: *'मैं यूपी से 52 साल का किसान हूँ, 2 एकड़ जमीन है'*)."
+            )
+        elif active_lang == "hinglish":
+            err_msg = (
+                "⚠️ **Document Clear Nahi Padha Ja Saka (OCR Unreadable):**\n\n"
+                "Aapke uploaded document se details (Name, Aadhaar Number, Income ya Land Size) clearly extract nahi ho paye.\n\n"
+                "• Please ek clear, straight aur well-lit photo upload karein.\n"
+                "• Ya phir aap direct chat mein apni details likh sakte hain (e.g. *'Main UP se 52 saal ka farmer hoon, 2 acre zameen hai'*)."
+            )
+        else:
+            err_msg = (
+                "⚠️ **Document Unreadable by OCR:**\n\n"
+                "Could not detect valid citizen parameters (Name, Aadhaar, Income, or Land Area) from the uploaded image.\n\n"
+                "• Please ensure the document photo is sharp, straight, and well-illuminated.\n"
+                "• Alternatively, you can type your details directly in the chat (e.g. *'I am a 52-year-old farmer from UP with 2 acres land and 1.8 Lakh income'*)."
+            )
         return {
             "status": "unreadable",
-            "provider": "conventional_ocr",
+            "provider": ocr_res.get("provider", "conventional_ocr"),
             "reply_text": err_msg,
             "session": session,
         }

@@ -62,3 +62,68 @@ async def test_multi_turn_document_profile_accumulation() -> None:
     await session_manager.clear_session(user_phone)
     cleared_state = await session_manager.get_session(user_phone)
     assert cleared_state == {}
+
+
+def test_deterministic_ocr_aadhaar_parsing() -> None:
+    """Validate deterministic regex parser extracts Aadhaar number, age, gender, and name accurately."""
+    from app.services.ocr import ocr_service
+
+    sample_aadhaar_text = (
+        "GOVERNMENT OF INDIA\n"
+        "Ramesh Kumar\n"
+        "DOB: 15/08/1964\n"
+        "MALE\n"
+        "9182 3746 5829\n"
+        "Uttar Pradesh"
+    )
+    doc_type, fields = ocr_service.parse_document_text(sample_aadhaar_text, filename_hint="aadhaar.jpg")
+    assert doc_type == "aadhaar"
+    assert fields["aadhaar_number"] == "9182-3746-5829"
+    assert fields["age"] == 62
+    assert fields["gender"] == "Male"
+    assert fields["state"] == "Uttar Pradesh"
+    assert fields["name"] == "Ramesh Kumar"
+    assert fields["verified_status"] is True
+
+
+def test_deterministic_ocr_income_certificate_parsing() -> None:
+    """Validate deterministic parser extracts annual income from income certificate text."""
+    from app.services.ocr import ocr_service
+
+    sample_income_text = (
+        "कार्यालय तहसीलदार\n"
+        "आय प्रमाण पत्र\n"
+        "प्रमाणित किया जाता है कि आवेदक की वार्षिक आय ₹120000 है।\n"
+        "राज्य: उत्तर प्रदेश"
+    )
+    doc_type, fields = ocr_service.parse_document_text(sample_income_text, filename_hint="income.jpg")
+    assert doc_type == "income_certificate"
+    assert fields["annual_income"] == 120000
+    assert fields["state"] == "Uttar Pradesh"
+    assert fields["verified_status"] is True
+
+
+def test_deterministic_ocr_land_record_parsing() -> None:
+    """Validate deterministic parser extracts land area in hectares from Khatauni text."""
+    from app.services.ocr import ocr_service
+
+    sample_khatauni_text = (
+        "भू-अभिलेख खतौनी\n"
+        "कुल रकबा: 1.45 हेक्टेयर\n"
+        "उत्तर प्रदेश"
+    )
+    doc_type, fields = ocr_service.parse_document_text(sample_khatauni_text, filename_hint="khatauni.jpg")
+    assert doc_type == "land_record"
+    assert fields["land_size_hectares"] == 1.45
+    assert fields["state"] == "Uttar Pradesh"
+    assert fields["verified_status"] is True
+
+
+def test_deterministic_ocr_empty_garbage_rejection() -> None:
+    """Validate that unreadable or garbage text strictly returns empty fields (no random fabricated values)."""
+    from app.services.ocr import ocr_service
+
+    garbage_text = "blurry background noise 1234 random pattern"
+    doc_type, fields = ocr_service.parse_document_text(garbage_text, filename_hint="photo.jpg")
+    assert fields == {}
+
