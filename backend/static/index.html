@@ -16,12 +16,6 @@
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
-    <!-- Puter.js Client-Side AI & OCR Engine -->
-    <script src="https://js.puter.com/v2/"></script>
-
-    <!-- Tesseract.js v5 Client-Side WebAssembly OCR (100% Free & Offline) -->
-    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -814,41 +808,10 @@
             } else if (type === 'aadhaar' || type === 'doc') {
                 endpoint = `${BASE_URL}/webhook/ocr/scan`;
                 formData.append("document_type", type === 'aadhaar' ? 'aadhaar' : 'income_or_land');
-
-                // Client-side OCR via Tesseract.js (Eng + Hin) with Puter.js fallback
-                try {
-                    let ocrText = "";
-                    if (window.Tesseract && typeof window.Tesseract.recognize === 'function') {
-                        const progressMsg = currentLang === 'hi'
-                            ? '🔍 **दस्तावेज़ स्कैन किया जा रहा है (Tesseract OCR)...** कृपया प्रतीक्षा करें।'
-                            : '🔍 **Scanning document with Tesseract OCR...** Please wait a moment.';
-                        appendBotMessage(progressMsg);
-
-                        const tesseractRes = await Tesseract.recognize(
-                            file,
-                            'eng+hin',
-                            { logger: m => console.log(m) }
-                        );
-                        if (tesseractRes && tesseractRes.data && tesseractRes.data.text) {
-                            ocrText = tesseractRes.data.text.trim();
-                        }
-                    }
-
-                    if (!ocrText && window.puter && window.puter.ai && typeof window.puter.ai.img2txt === 'function') {
-                        const dataUrl = await new Promise((resolve) => {
-                            const reader = new FileReader();
-                            reader.onload = () => resolve(reader.result);
-                            reader.readAsDataURL(file);
-                        });
-                        ocrText = await window.puter.ai.img2txt(dataUrl);
-                    }
-
-                    if (ocrText && ocrText.trim()) {
-                        formData.append("extracted_text", ocrText.trim());
-                    }
-                } catch (clientOcrErr) {
-                    console.log("Client OCR error:", clientOcrErr);
-                }
+                const progressMsg = currentLang === 'hi'
+                    ? '🔍 **दस्तावेज़ ओसीआर (API4AI) द्वारा स्कैन किया जा रहा है...** कृपया प्रतीक्षा करें।'
+                    : '🔍 **Scanning document with dedicated API4AI OCR engine...** Please wait a moment.';
+                appendBotMessage(progressMsg);
             }
 
             try {

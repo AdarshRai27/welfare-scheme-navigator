@@ -189,10 +189,9 @@ async def handle_ocr_scan(
     phone: str = Form("919999999999"),
     language: Optional[str] = Form(None),
     document_type: str = Form("auto"),
-    extracted_text: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
 ) -> Dict[str, Any]:
-    """Processes document OCR for Aadhaar Cards, Income Certificates, and Land Records."""
+    """Processes document OCR using dedicated API4AI Cloud OCR for Aadhaar Cards, Income Certificates, and Land Records."""
     session = await session_manager.get_session(phone)
     if not session:
         session = {"whatsapp_id": phone, "preferred_language": language or "en", "extracted_profile": {}}
@@ -201,26 +200,21 @@ async def handle_ocr_scan(
 
     active_lang = language or session.get("preferred_language", "en")
 
-    filename_hint = "aadhaar"
-    extracted_fields = {}
-    doc_type = document_type or "document"
-    ocr_provider = "client_ocr"
+    if not file:
+        return {
+            "status": "unreadable",
+            "reply_text": "⚠️ No document file was attached. Please select an image to upload." if active_lang == "en" else "⚠️ कोई फ़ोटो संलग्न नहीं है। कृपया अपलोड करने के लिए एक फ़ोटो चुनें।",
+            "session": session,
+        }
 
-    # 1. If client-side OCR (e.g. Puter.js / Tesseract.js) already extracted raw text
-    if extracted_text and extracted_text.strip():
-        doc_type, extracted_fields = ocr_service.parse_document_text(
-            extracted_text.strip(), document_type, filename_hint
-        )
-        ocr_provider = "puter_client_ocr"
+    file_bytes = await file.read()
+    filename_hint = file.filename or "aadhaar"
 
-    # 2. Otherwise run server-side OCR engine on uploaded file
-    if not extracted_fields and file:
-        file_bytes = await file.read()
-        filename_hint = file.filename or "aadhaar"
-        ocr_res = await ocr_service.extract_document_data(file_bytes, filename_hint, document_type)
-        extracted_fields = ocr_res.get("extracted_fields", {})
-        doc_type = ocr_res.get("document_type", doc_type)
-        ocr_provider = ocr_res.get("provider", "server_ocr")
+    # Run Dedicated API4AI OCR Pipeline
+    ocr_res = await ocr_service.extract_document_data(file_bytes, filename_hint, document_type)
+    extracted_fields = ocr_res.get("extracted_fields", {})
+    doc_type = ocr_res.get("document_type", "document")
+    ocr_provider = ocr_res.get("provider", "api4ai_ocr")
 
     # Check if OCR extracted meaningful fields
     valid_fields = {k: v for k, v in extracted_fields.items() if v and v != "Not Extracted"}
