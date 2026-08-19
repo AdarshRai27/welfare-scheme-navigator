@@ -76,8 +76,9 @@ WELFARE_DOMAIN_TAXONOMY = {
     ],
     "citizen_profile_params": [
         "scheme", "yojana", "eligibility", "benefit", "apply", "portal", "subsidy", "aadhaar", "income", "land",
-        "hectare", "acre", "state", "domicile", "caste", "rashan", "ration", "khatauni", "certificate",
-        "आधार", "आय", "रकबा", "जमीन", "भूमि", "राशन", "खतौनी", "जाति", "निवास", "पात्रता", "योजना"
+        "hectare", "acre", "state", "domicile", "caste", "rashan", "ration", "khatauni", "certificate", "money",
+        "financial assistance", "grant", "sarkari sahayata", "sarkari yojana",
+        "आधार", "आय", "रकबा", "जमीन", "भूमि", "राशन", "खतौनी", "जाति", "निवास", "पात्रता", "योजना", "सरकारी सहायता"
     ]
 }
 
@@ -207,20 +208,20 @@ def extract_demographics_from_text(text: str) -> Dict[str, Any]:
                 res["state"] = full_name
                 break
 
-    # 5. Extract Caste Category
-    if "sc" in lowered or "scheduled caste" in lowered:
+    # 5. Extract Caste Category with strict word boundary matching
+    if re.search(r'\b(?:sc|अनुसूचित जाति|scheduled caste)\b', lowered):
         res["caste_category"] = "SC"
-    elif "st" in lowered or "scheduled tribe" in lowered:
+    elif re.search(r'\b(?:st|अनुसूचित जनजाति|scheduled tribe)\b', lowered):
         res["caste_category"] = "ST"
-    elif "obc" in lowered or "other backward" in lowered:
+    elif re.search(r'\b(?:obc|अन्य पिछड़ा वर्ग|other backward)\b', lowered):
         res["caste_category"] = "OBC"
-    elif "general" in lowered or "gen" in lowered:
+    elif re.search(r'\b(?:general category|सामान्य वर्ग|gen category)\b', lowered):
         res["caste_category"] = "General"
 
-    # 6. Extract Gender
-    if any(g in lowered for g in ["female", "woman", "women", "mahila", "aurat", "lady", "girl"]):
+    # 6. Extract Gender with word boundary matching
+    if re.search(r'\b(?:female|woman|women|mahila|aurat|lady|girl|महिला|औरत)\b', lowered):
         res["gender"] = "Female"
-    elif any(g in lowered for g in ["male", "man", "purush", "boy"]):
+    elif re.search(r'\b(?:male|man|purush|boy|पुरुष|आदमी)\b', lowered):
         res["gender"] = "Male"
 
     return res
@@ -268,79 +269,106 @@ async def extract_profile_node(state: Dict[str, Any]) -> Dict[str, Any]:
         if v is not None:
             profile[k] = v
 
-    # 2. Classify Intent, Language, and additional parameters via LLM
-    intent_data = await llm_extract_profile(query)
-    
-    intent = intent_data.get("_intent", "SCHEME_QUERY")
-    detected_lang = intent_data.get("_language")
-
-    # Domain Limitation Guardrail: Catch off-topic and general knowledge prompts deterministically
-    lowered_q = query.lower().strip()
-    off_topic_indicators = [
-        "python", "javascript", "java", "c++", "html", "css", "code", "coding", "program", "function", "algorithm",
-        "cricket", "football", "ipl", "messi", "ronaldo", "virat", "dhoni", "match", "score", "tennis",
-        "recipe", "cake", "biryani", "pizza", "burger", "cook", "cooking", "food",
-        "movie", "actor", "actress", "song", "lyrics", "sing", "dance",
-        "weather", "temperature", "capital of", "president of", "prime minister", "pm of", "cm of",
-        "chief minister", "who is", "who's", "who was", "kaun hai", "kaun he", "tell me a joke", "joke",
-        "story", "riddle", "narendra modi", "modi", "rahul gandhi", "history of", "calculate", "solve",
-        "how does", "what is the speed", "distance between", "meaning of"
-    ]
-    scheme_indicators = [
-        "scheme", "yojana", "loan", "pension", "farmer", "kisan", "subsidy",
-        "scholarship", "aadhaar", "certificate", "bima", "insurance", "ration",
-        "student", "widow", "senior", "caste", "dukan", "mudra", "ayushman",
-        "pm kisan", "pm-kisan", "pmfby", "kcc", "surya ghar", "pmay",
-        "योजना", "पेंशन", "किसान", "सब्सिडी", "ऋण", "लोन", "छात्रवृत्ति", "बीमा"
-    ]
-    if any(o in lowered_q for o in off_topic_indicators) and not any(s in lowered_q for s in scheme_indicators):
-        intent = "OFF_TOPIC"
-    
-    # Accurate language resolution
+    # 1. Deterministic Language Detection
     is_hindi_script = any(2304 <= ord(c) <= 2431 for c in query)
     words = query.lower().split()
-    hinglish_keywords = {"chahiye", "yojana", "mera", "meri", "karna", "krna", "liya", "liye", "kaise", "batao", "bataiye", "ko", "dukan", "kisan", "kheti", "me", "mein", "bolo", "hai", "shuru", "milega", "padhai"}
-    is_hinglish_text = any(w in hinglish_keywords for w in words)
+    unambiguous_hinglish = {
+        "chahiye", "yojana", "mera", "meri", "karna", "krna", "liya", "liye", "kaise", "batao", "bataiye",
+        "dukan", "kisan", "kheti", "mein", "bolo", "shuru", "milega", "padhai", "paisa", "paise", "madad", "sarkari"
+    }
+    is_hinglish_text = any(w in unambiguous_hinglish for w in words)
     
     if is_hindi_script:
         resolved_lang = "hi"
     elif is_hinglish_text:
         resolved_lang = "hinglish"
-    elif detected_lang in ("en", "hi", "hinglish"):
-        resolved_lang = detected_lang
     else:
-        resolved_lang = current_lang
+        resolved_lang = current_lang or "en"
 
-    # Merge LLM fields if they are not None and not already extracted with high precision
+    # 2. Meta Language Command Check (Multi-lingual)
+    lowered_q = query.lower().strip()
+    lang_commands_hi = ["हिंदी में", "हिन्दी में", "हिंदी मे", "हिंदी में बोलो", "हिंदी में बात करो", "हिंदी में बताओ", "भाषा बदलो", "hindi me", "hindi mein", "hindi me bolo", "hindi me batao", "speak in hindi", "reply in hindi", "answer in hindi"]
+    lang_commands_en = ["अंग्रेजी में", "इंग्लिश में", "english me", "english mein", "speak in english", "reply in english", "answer in english"]
+    lang_commands_hinglish = ["हिंग्लिश में", "hinglish me", "hinglish mein", "speak in hinglish", "reply in hinglish", "answer in hinglish"]
+
+    if any(k in lowered_q for k in lang_commands_hi):
+        return {"extracted_profile": profile, "query_intent": "META_LANGUAGE_COMMAND", "preferred_language": "hi"}
+    if any(k in lowered_q for k in lang_commands_en):
+        return {"extracted_profile": profile, "query_intent": "META_LANGUAGE_COMMAND", "preferred_language": "en"}
+    if any(k in lowered_q for k in lang_commands_hinglish):
+        return {"extracted_profile": profile, "query_intent": "META_LANGUAGE_COMMAND", "preferred_language": "hinglish"}
+
+    # 3. General Greetings Check (Multi-lingual)
+    greetings = [
+        "hi", "hello", "hey", "namaste", "namaskar", "who are you", "who r u", "help", "madad",
+        "नमस्ते", "नमस्कार", "प्रणाम", "राम राम", "जय श्री राम", "तुम कौन हो", "आप कौन हैं", "क्या कर सकते हो", "मदद करो"
+    ]
+    if lowered_q in greetings or (len(query.strip()) <= 15 and any(g in lowered_q for g in ["hi", "hello", "hey", "namaste", "नमस्ते", "नमस्कार", "प्रणाम"])):
+        return {"extracted_profile": profile, "query_intent": "GENERAL_GREETING", "preferred_language": resolved_lang}
+
+    # 4. Deterministic Multi-lingual Out-of-Domain & GK Interceptor (English + Hindi + Hinglish)
+    off_topic_indicators = [
+        # English
+        "python", "javascript", "java", "c++", "html", "css", "code", "coding", "program", "function", "algorithm",
+        "cricket", "football", "ipl", "messi", "ronaldo", "virat", "dhoni", "match", "score", "tennis",
+        "recipe", "cake", "biryani", "pizza", "burger", "cook", "cooking", "food",
+        "movie", "actor", "actress", "song", "lyrics", "sing", "dance",
+        "weather", "temperature", "capital of", "president of", "prime minister", "pm of", "cm of",
+        "chief minister", "who is", "who's", "who was", "whom is", "what is the capital", "where is", "when did",
+        "tell me a joke", "joke", "story", "riddle", "narendra modi", "modi", "rahul gandhi", "history of", "calculate", "solve",
+        "how does", "what is the speed", "distance between", "meaning of", "tell me about",
+        # Hindi & Hinglish
+        "कौन है", "कौन हैं", "किसने बनाया", "क्या है", "कहाँ है", "कहा है", "कब हुआ", "कैसे बनता है", "कैसे बनाएं",
+        "मौसम कैसा है", "मौसम का हाल", "क्रिकेट", "स्कोर", "मैच", "प्रधानमंत्री कौन", "मुख्यमंत्री कौन", "राष्ट्रपति कौन",
+        "राजधानी क्या", "मोदी जी कौन", "राहुल गांधी", "फिल्म", "सिनेमा", "गाना सुनाओ", "चुटकुला सुनाओ", "कहानी सुनाओ",
+        "कविता सुनाओ", "कोड लिखो", "गणित हल करो", "ताजमहल", "भारत की राजधानी", "अमेरिका के राष्ट्रपति",
+        "kaun hai", "kaun he", "kaha hai", "kahan hai", "weather kaisa hai", "match kiska hai", "score kya hai",
+        "modi kaun hai", "pm kaun hai", "cm kaun hai", "joke sunao", "gana sunao", "kahani sunao", "code likho"
+    ]
+    
+    specific_scheme_indicators = [
+        "pm kisan", "pm-kisan", "mudra", "ayushman", "pmfby", "fasal bima", "kcc", "kisan credit",
+        "surya ghar", "awas", "pmay", "pension", "scholarship", "sukanya", "ladli", "vishwakarma",
+        "किसान सम्मान", "आयुष्मान", "मुद्रा लोन", "फसल बीमा", "सूर्य घर", "आवास योजना", "पेंशन योजना", "सुकन्या समृद्धि"
+    ]
+
+    is_asking_specific_scheme = any(s in lowered_q for s in specific_scheme_indicators)
+    is_off_topic_query = any(o in lowered_q for o in off_topic_indicators)
+
+    if is_off_topic_query and not is_asking_specific_scheme:
+        return {"extracted_profile": profile, "query_intent": "OFF_TOPIC", "preferred_language": resolved_lang}
+
+    # 5. Extract Demographic Attributes via NLP & LLM
+    nlp_fields = extract_demographics_from_text(query)
+    for k, v in nlp_fields.items():
+        if v is not None:
+            profile[k] = v
+
+    intent_data = await llm_extract_profile(query)
     for key, val in intent_data.items():
         if not key.startswith("_") and val is not None:
             if key not in profile or profile[key] is None:
                 profile[key] = val
 
-    # Strict Minimum Requirements & Domain Boundary Check:
-    if intent == "SCHEME_QUERY":
-        has_min_profile = any([
-            profile.get("age") is not None,
-            profile.get("annual_income") is not None,
-            profile.get("land_size_hectares") is not None,
-            profile.get("state") is not None,
-            profile.get("gender") is not None,
-            profile.get("caste_category") is not None,
-            profile.get("has_student") is True,
-            profile.get("is_farmer") is True,
-            profile.get("is_senior") is True,
-            profile.get("is_business") is True,
-        ])
-        in_domain = is_in_welfare_domain(query)
-        mentions_specific_scheme = any(k in lowered_q for k in [
-            "pm kisan", "pm-kisan", "mudra", "ayushman", "pmfby", "fasal bima", "kcc", "kisan credit",
-            "surya ghar", "awas", "pmay", "pension", "scholarship", "sukanya", "ladli", "vishwakarma"
-        ])
+    # 6. Welfare Domain & Minimum Criteria Gatekeeper
+    intent = "SCHEME_QUERY"
+    has_min_profile = any([
+        profile.get("age") is not None,
+        profile.get("annual_income") is not None,
+        profile.get("land_size_hectares") is not None,
+        profile.get("caste_category") is not None,
+        profile.get("gender") is not None,
+        profile.get("has_student") is True,
+        profile.get("is_farmer") is True,
+        profile.get("is_senior") is True,
+        profile.get("is_business") is True,
+    ])
+    in_domain = is_in_welfare_domain(query)
 
-        if not in_domain and not has_min_profile and not mentions_specific_scheme:
-            intent = "OFF_TOPIC"
-        elif not has_min_profile and not mentions_specific_scheme and len(query.strip().split()) <= 15:
-            intent = "INSUFFICIENT_INFORMATION"
+    if not in_domain and not has_min_profile and not is_asking_specific_scheme:
+        intent = "OFF_TOPIC"
+    elif not has_min_profile and not is_asking_specific_scheme:
+        intent = "INSUFFICIENT_INFORMATION"
 
     logger.info(
         f"[AGENT extract_profile] Intent: {intent} | Language: {resolved_lang} | Profile: {profile}"

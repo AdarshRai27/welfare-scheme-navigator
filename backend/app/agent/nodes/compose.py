@@ -81,6 +81,24 @@ async def compose_response_node(state: Dict[str, Any]) -> Dict[str, Any]:
             reply = "You are not eligible for any schemes in our current database, but we are expanding our database as we speak. Please visit again soon!"
         return {"reply_text": reply}
 
+    # Guardrail 4: Meta Language Command Response
+    if intent == "META_LANGUAGE_COMMAND":
+        if language == "hi":
+            return {"reply_text": "नमस्ते! मैंने उत्तर देने की भाषा बदलकर हिंदी कर दी है। आप किस सरकारी योजना या सहायता के बारे में जानना चाहते हैं?"}
+        elif language == "hinglish":
+            return {"reply_text": "Namaste! Maine response language badalkar Hinglish kar di hai. Aap kis sarkari yojana ke baare me janna chahte hain?"}
+        else:
+            return {"reply_text": "Hello! I have updated my response language to English. What government welfare scheme or benefit are you looking for today?"}
+
+    # Guardrail 5: General Greeting Response
+    if intent == "GENERAL_GREETING":
+        if language == "hi":
+            return {"reply_text": "नमस्ते! मैं आपका सरकारी सहायक हूँ। 🙏\n\n• मैं आपको 125+ से अधिक केंद्रीय और राज्य सरकार की कल्याणकारी योजनाओं (जैसे पीएम-किसान, मुद्रा लोन, वृद्धावस्था पेंशन, आयुष्मान भारत, छात्रवृत्ति) की पात्रता जांचने और आवेदन करने में सहायता कर सकता हूँ।\n• आप अपना प्रश्न पूछें (जैसे: 'मुझे दुकान के लिए लोन चाहिए' या 'किसान योजनाएं'), या अपने दस्तावेज की फोटो स्कैन करें।"}
+        elif language == "hinglish":
+            return {"reply_text": "Namaste! Main aapka Sarkari Sahayak hoon. 🙏\n\n• Main aapko 125+ Central aur State government welfare schemes (jaise PM-Kisan, Mudra Loan, Senior Pension, Ayushman Bharat, Scholarship) me eligibility check karne aur apply karne me help kar sakta hoon.\n• Aap apna question poochein ya Didit ID scan karein."}
+        else:
+            return {"reply_text": "Hello! I am Sarkari Sahayak, your AI counselor for Indian government welfare schemes. 🙏\n\n• I can help you discover and check eligibility for over 125 central and state welfare schemes (such as PM-Kisan, Mudra Loans, Senior Pension, Ayushman Bharat, and Student Scholarships).\n• How can I assist you today?"}
+
     # Generate response via LLM / template composition
     reply_text = await llm_compose_response(
         profile=profile,

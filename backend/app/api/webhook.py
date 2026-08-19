@@ -345,8 +345,8 @@ async def handle_didit_mock_oauth_verify(
     badge_title = {
         "hi": "⚡ **1-क्लिक डिडिट सत्यापित पहचान:**",
         "hinglish": "⚡ **1-Click Didit Verified Profile:**",
-        "en": "⚡ **1-Click Didit Verified Identity:**"
-    }.get(active_lang, "⚡ **1-Click Didit Verified Identity:**")
+        "en": "⚡ **1-Click Didit Verified Profile:**"
+    }.get(active_lang, "⚡ **1-Click Didit Verified Profile:**")
 
     return {
         "status": "success",
