@@ -64,19 +64,23 @@ class OCRService:
         raw_text = ""
         provider_used = "none"
 
-        # 1. Try Google Cloud Vision API if API key provided
-        if settings.GOOGLE_VISION_API_KEY and not settings.GOOGLE_VISION_API_KEY.startswith("mock"):
+        # 1. Try API4AI OCR Cloud Engine (Primary Dedicated OCR)
+        if settings.API4AI_API_KEY and not settings.API4AI_API_KEY.startswith("mock"):
+            raw_text, provider_used = await self._run_api4ai_ocr(image_bytes)
+
+        # 2. Try Google Cloud Vision API if API key provided
+        if not raw_text and settings.GOOGLE_VISION_API_KEY and not settings.GOOGLE_VISION_API_KEY.startswith("mock"):
             raw_text, provider_used = await self._run_google_vision_ocr(image_bytes)
 
-        # 2. Try Azure Computer Vision Read API if configured
+        # 3. Try Azure Computer Vision Read API if configured
         if not raw_text and settings.AZURE_OCR_KEY and settings.AZURE_OCR_ENDPOINT:
             raw_text, provider_used = await self._run_azure_ocr(image_bytes)
 
-        # 3. Try OCR.Space API (Dedicated OCR supporting English & Hindi)
+        # 4. Try OCR.Space API (Dedicated OCR supporting English & Hindi)
         if not raw_text and settings.OCR_SPACE_API_KEY:
             raw_text, provider_used = await self._run_ocr_space(image_bytes)
 
-        # 4. Try local Tesseract OCR if available
+        # 5. Try local Tesseract OCR if available
         if not raw_text:
             raw_text, provider_used = self._run_local_tesseract(image_bytes)
 
@@ -102,6 +106,33 @@ class OCRService:
             "provider": provider_used,
             "success": bool(extracted_fields),
         }
+
+    async def _run_api4ai_ocr(self, image_bytes: bytes) -> Tuple[str, str]:
+        """Calls api4ai OCR Cloud API for high-precision document character recognition."""
+        try:
+            url = "https://api4ai.cloud/ocr/v1/results"
+            headers = {"X-API-KEY": settings.API4AI_API_KEY}
+            files = {"image": ("document.jpg", image_bytes, "image/jpeg")}
+            async with httpx.AsyncClient(timeout=25.0) as client:
+                res = await client.post(url, headers=headers, files=files)
+                if res.status_code == 200:
+                    data = res.json()
+                    raw_lines = []
+                    for result in data.get("results", []):
+                        for ent in result.get("entities", []):
+                            for obj in ent.get("objects", []):
+                                for sub_ent in obj.get("entities", []):
+                                    if "text" in sub_ent and sub_ent["text"]:
+                                        raw_lines.append(sub_ent["text"].strip())
+                    full_text = "\n".join(raw_lines).strip()
+                    if full_text:
+                        logger.info(f"[OCR] API4AI extracted {len(full_text)} chars")
+                        return full_text, "api4ai_ocr"
+                else:
+                    logger.warning(f"[OCR] API4AI error ({res.status_code}): {res.text}")
+        except Exception as err:
+            logger.warning(f"[OCR] API4AI request error: {err}")
+        return "", "api4ai_failed"
 
     async def _run_ocr_space(self, image_bytes: bytes) -> Tuple[str, str]:
         """Calls OCR.Space REST API for high-accuracy multi-language OCR."""
@@ -304,19 +335,27 @@ class OCRService:
             "bharat sarkar", "mera aadhaar", "enrollment", "help@uidai.gov.in",
             "www.uidai.gov.in", "income certificate", "tahsildar", "revenue department",
             "khatauni", "khasra", "uttar pradesh", "bihar", "male", "female", "dob",
-            "year of birth", "आधार", "भारत सरकार"
+            "year of birth", "आधार", "भारत सरकार", "office of the"
         ]
         lines = [line.strip() for line in text.splitlines() if len(line.strip()) > 3]
         for line in lines:
-            line_lower = line.lower()
+            # Strip label prefixes like Name: / Applicant: / आवेदक:
+            cleaned_line = re.sub(
+                r"^(?:name|applicant(?:\s*name)?|आवेदक(?:\s*का\s*नाम)?|नाम|खातेदार(?:\s*का\s*नाम)?|citizen)[:\s\-]+",
+                "",
+                line,
+                flags=re.IGNORECASE,
+            ).strip()
+
+            line_lower = cleaned_line.lower()
             if any(phrase in line_lower for phrase in ignored_phrases):
                 continue
-            if re.search(r"[0-9]{4,}", line):
+            if re.search(r"[0-9]{4,}", cleaned_line):
                 continue
             # Check if line looks like a person's name (2-4 words, alphabetic)
-            words = line.split()
+            words = cleaned_line.split()
             if 2 <= len(words) <= 4 and all(re.match(r"^[A-Za-z\u0900-\u097F\.\'-]+$", w) for w in words):
-                return line.title()
+                return cleaned_line.strip(". ")
         return None
 
 
