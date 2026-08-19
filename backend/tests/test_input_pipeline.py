@@ -27,17 +27,35 @@ async def test_web_audio_transcription() -> None:
 
 
 @pytest.mark.asyncio
-async def test_multi_turn_document_profile_accumulation() -> None:
+async def test_multi_turn_document_profile_accumulation(monkeypatch: pytest.MonkeyPatch) -> None:
     """Validate that consecutive document uploads correctly accumulate fields in user state."""
     user_phone = "919999888877"
 
     # Reset any existing session state to start fresh
     await session_manager.clear_session(user_phone)
 
-    # 1. Send Didit ID Scan
+    import app.api.webhook as webhook_mod
+
+    async def mock_extract(image_bytes, filename_hint="", expected_type="auto"):
+        return {
+            "document_type": "aadhaar",
+            "extracted_fields": {
+                "name": "Ramesh Kumar",
+                "aadhaar_number": "9182-3746-5829",
+                "state": "Uttar Pradesh",
+                "verified_status": True,
+            },
+            "raw_text": "Sample document text",
+            "provider": "mock",
+            "success": True,
+        }
+
+    monkeypatch.setattr(webhook_mod.ocr_service, "extract_document_data", mock_extract)
+
+    # 1. Send ID Scan
     fake_aadhaar = io.BytesIO(b"MOCK_AADHAAR_SCAN_BYTES")
     response1 = client.post(
-        "/webhook/didit/scan",
+        "/webhook/ocr/scan",
         data={"phone": user_phone},
         files={"file": ("aadhaar.jpg", fake_aadhaar, "image/jpeg")},
     )
@@ -46,19 +64,10 @@ async def test_multi_turn_document_profile_accumulation() -> None:
     # Retrieve state from cache and verify Aadhaar fields exist
     state1 = await session_manager.get_session(user_phone)
     assert "extracted_profile" in state1
-    assert "name" in state1["extracted_profile"]
+    assert state1["extracted_profile"]["name"] == "Ramesh Kumar"
+    assert state1["extracted_profile"]["state"] == "Uttar Pradesh"
 
-    # 2. Send 1-Click Didit verification
-    response2 = client.get(f"/webhook/didit/oauth/mock_verify?phone={user_phone}")
-    assert response2.status_code == 200
-
-    # Retrieve state from cache and verify fields merged
-    state2 = await session_manager.get_session(user_phone)
-    profile = state2["extracted_profile"]
-    assert "name" in profile
-    assert "state" in profile
-
-    # 3. Verify session clear works (Privacy Option A)
+    # 2. Verify session clear works (Privacy Option A)
     await session_manager.clear_session(user_phone)
     cleared_state = await session_manager.get_session(user_phone)
     assert cleared_state == {}

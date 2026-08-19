@@ -64,18 +64,8 @@ class OCRService:
         raw_text = ""
         provider_used = "none"
 
-        # Fast-track mock test payloads during automated test runs
-        if b"MOCK" in image_bytes or b"fake" in image_bytes:
-            provider_used = "mock_test_scanner"
-            if "income" in filename_hint.lower():
-                raw_text = "कार्यालय तहसीलदार\nआय प्रमाण पत्र\nआवेदक: रमेश कुमार\nवार्षिक आय: ₹95000\nराज्य: उत्तर प्रदेश"
-            elif "land" in filename_hint.lower() or "khatauni" in filename_hint.lower():
-                raw_text = "भू-अभिलेख खतौनी\nखातेदार: रमेश कुमार\nकुल रकबा: 1.25 हेक्टेयर\nउत्तर प्रदेश"
-            else:
-                raw_text = "GOVERNMENT OF INDIA\nRamesh Kumar\nDOB: 15/08/1964\nMALE\n9182 3746 5829\nUttar Pradesh"
-
         # 1. Try Google Cloud Vision API if API key provided
-        if not raw_text and settings.GOOGLE_VISION_API_KEY and not settings.GOOGLE_VISION_API_KEY.startswith("mock"):
+        if settings.GOOGLE_VISION_API_KEY and not settings.GOOGLE_VISION_API_KEY.startswith("mock"):
             raw_text, provider_used = await self._run_google_vision_ocr(image_bytes)
 
         # 2. Try Azure Computer Vision Read API if configured
@@ -85,6 +75,10 @@ class OCRService:
         # 3. Try OCR.Space API (Dedicated OCR supporting English & Hindi)
         if not raw_text and settings.OCR_SPACE_API_KEY:
             raw_text, provider_used = await self._run_ocr_space(image_bytes)
+
+        # 4. Try local Tesseract OCR if available
+        if not raw_text:
+            raw_text, provider_used = self._run_local_tesseract(image_bytes)
 
         logger.info(f"[OCR] Extracted raw text using provider '{provider_used}': {len(raw_text)} chars")
 
@@ -191,6 +185,21 @@ class OCRService:
         except Exception as err:
             logger.warning(f"[OCR] Azure OCR error: {err}")
         return "", "azure_ocr_failed"
+
+    def _run_local_tesseract(self, image_bytes: bytes) -> Tuple[str, str]:
+        """Tries local Tesseract OCR if installed on system."""
+        try:
+            import io
+            import pytesseract
+            from PIL import Image
+
+            img = Image.open(io.BytesIO(image_bytes))
+            text = pytesseract.image_to_string(img, lang="eng+hin")
+            if text and text.strip():
+                return text.strip(), "local_tesseract"
+        except Exception:
+            pass
+        return "", "none"
 
     def parse_document_text(
         self, raw_text: str, expected_type: str = "auto", filename_hint: str = ""
