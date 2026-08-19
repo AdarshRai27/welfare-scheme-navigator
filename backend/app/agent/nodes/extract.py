@@ -226,19 +226,23 @@ async def extract_profile_node(state: Dict[str, Any]) -> Dict[str, Any]:
     intent = intent_data.get("_intent", "SCHEME_QUERY")
     detected_lang = intent_data.get("_language")
 
-    # Domain Limitation Guardrail: Catch off-topic prompts deterministically
-    lowered_q = query.lower()
+    # Domain Limitation Guardrail: Catch off-topic and general knowledge prompts deterministically
+    lowered_q = query.lower().strip()
     off_topic_indicators = [
         "python", "javascript", "java", "c++", "html", "css", "code", "coding", "program", "function", "algorithm",
-        "cricket", "football", "ipl", "messi", "ronaldo", "virat", "dhoni", "match", "score",
-        "recipe", "cake", "biryani", "pizza", "burger", "cook", "cooking",
+        "cricket", "football", "ipl", "messi", "ronaldo", "virat", "dhoni", "match", "score", "tennis",
+        "recipe", "cake", "biryani", "pizza", "burger", "cook", "cooking", "food",
         "movie", "actor", "actress", "song", "lyrics", "sing", "dance",
-        "weather", "temperature", "capital of", "president of", "prime minister of"
+        "weather", "temperature", "capital of", "president of", "prime minister", "pm of", "cm of",
+        "chief minister", "who is", "who's", "who was", "kaun hai", "kaun he", "tell me a joke", "joke",
+        "story", "riddle", "narendra modi", "modi", "rahul gandhi", "history of", "calculate", "solve",
+        "how does", "what is the speed", "distance between", "meaning of"
     ]
     scheme_indicators = [
-        "scheme", "yojana", "loan", "pension", "farmer", "kisan", "land", "income", "subsidy",
-        "scholarship", "aadhaar", "certificate", "bima", "insurance", "ration", "business",
-        "student", "female", "woman", "widow", "senior", "caste", "dukan", "mudra", "ayushman",
+        "scheme", "yojana", "loan", "pension", "farmer", "kisan", "subsidy",
+        "scholarship", "aadhaar", "certificate", "bima", "insurance", "ration",
+        "student", "widow", "senior", "caste", "dukan", "mudra", "ayushman",
+        "pm kisan", "pm-kisan", "pmfby", "kcc", "surya ghar", "pmay",
         "योजना", "पेंशन", "किसान", "सब्सिडी", "ऋण", "लोन", "छात्रवृत्ति", "बीमा"
     ]
     if any(o in lowered_q for o in off_topic_indicators) and not any(s in lowered_q for s in scheme_indicators):

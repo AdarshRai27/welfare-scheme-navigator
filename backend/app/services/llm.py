@@ -58,33 +58,32 @@ async def run_llm_completion(
         except Exception as err:
             logger.warning(f"[OPENAI LLM] Connection error: {err}. Trying Groq failover...")
 
-    # 2. Secondary: Groq API (llama-3.3-70b-versatile) - Ultra-fast failover
+    # 2. Secondary: Groq API (llama-3.3-70b / llama-3.1-70b / llama3-70b-8192)
     if settings.GROQ_API_KEY and not settings.GROQ_API_KEY.startswith("mock"):
         url = "https://api.groq.com/openai/v1/chat/completions"
         headers = {
             "Authorization": f"Bearer {settings.GROQ_API_KEY}",
             "Content-Type": "application/json",
         }
-        payload = {
-            "model": "llama-3.3-70b-versatile",
-            "messages": [
-                {"role": "system", "content": system_message},
-                {"role": "user", "content": prompt},
-            ],
-            "temperature": 0.1,
-        }
-        try:
-            async with httpx.AsyncClient(timeout=20.0) as client:
-                res = await client.post(url, json=payload, headers=headers)
-                if res.status_code == 200:
-                    data = res.json()
-                    content = data["choices"][0]["message"]["content"]
-                    logger.info("[GROQ LLM] Response fetched successfully via failover.")
-                    return content
-                else:
-                    logger.warning(f"[GROQ LLM] Failed response ({res.status_code}): {res.text}")
-        except Exception as err:
-            logger.warning(f"[GROQ LLM] Connection error: {err}")
+        for groq_model in ["llama-3.3-70b-versatile", "llama-3.1-70b-versatile", "llama3-70b-8192"]:
+            payload = {
+                "model": groq_model,
+                "messages": [
+                    {"role": "system", "content": system_message},
+                    {"role": "user", "content": prompt},
+                ],
+                "temperature": 0.1,
+            }
+            try:
+                async with httpx.AsyncClient(timeout=20.0) as client:
+                    res = await client.post(url, json=payload, headers=headers)
+                    if res.status_code == 200:
+                        data = res.json()
+                        content = data["choices"][0]["message"]["content"]
+                        logger.info(f"[GROQ LLM] Response fetched successfully using {groq_model}.")
+                        return content
+            except Exception as err:
+                logger.warning(f"[GROQ LLM] Error with {groq_model}: {err}")
 
     return ""
 
