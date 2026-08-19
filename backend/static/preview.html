@@ -16,6 +16,9 @@
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
+    <!-- Puter.js Client-Side AI & OCR Engine -->
+    <script src="https://js.puter.com/v2/"></script>
+
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -805,12 +808,26 @@
             let endpoint = `${BASE_URL}/webhook/web/message`;
             if (type === 'audio') {
                 formData.append("message_type", "audio");
-            } else if (type === 'aadhaar') {
+            } else if (type === 'aadhaar' || type === 'doc') {
                 endpoint = `${BASE_URL}/webhook/ocr/scan`;
-                formData.append("document_type", "aadhaar");
-            } else if (type === 'doc') {
-                endpoint = `${BASE_URL}/webhook/ocr/scan`;
-                formData.append("document_type", "income_or_land");
+                formData.append("document_type", type === 'aadhaar' ? 'aadhaar' : 'income_or_land');
+
+                // Perform client-side Puter.js OCR if available
+                try {
+                    if (window.puter && window.puter.ai && typeof window.puter.ai.img2txt === 'function') {
+                        const dataUrl = await new Promise((resolve) => {
+                            const reader = new FileReader();
+                            reader.onload = () => resolve(reader.result);
+                            reader.readAsDataURL(file);
+                        });
+                        const ocrText = await window.puter.ai.img2txt(dataUrl);
+                        if (ocrText && ocrText.trim()) {
+                            formData.append("extracted_text", ocrText.trim());
+                        }
+                    }
+                } catch (clientOcrErr) {
+                    console.log("Client OCR fallback:", clientOcrErr);
+                }
             }
 
             try {
